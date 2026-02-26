@@ -6,7 +6,7 @@ import {
     FaCopy, FaCheck, FaTrash, FaKey, FaUser, FaShield, FaSkull,
 } from 'react-icons/fa6';
 
-// ── Debounce hook ─────────────────────────────────────────────
+//Debounce hook
 function useDebounce(value, delay = 400) {
     const [debounced, setDebounced] = useState(value);
     useEffect(() => {
@@ -16,7 +16,7 @@ function useDebounce(value, delay = 400) {
     return debounced;
 }
 
-// ── Constants ─────────────────────────────────────────────────
+// Constants
 const ROLES = [
     { value: 'all',          label: 'All Roles' },
     { value: 'super_admin',  label: 'Ministerial Head IT Admin' },
@@ -32,11 +32,6 @@ const STATUSES = [
     { value: 'Suspended', label: 'Suspended' },
 ];
 
-// ─────────────────────────────────────────────────────────────
-// SHARED FIELD — defined at module level so React never remounts
-// it during typing. Defining inside a component would cause the
-// input element to be destroyed + recreated on every keystroke.
-// ─────────────────────────────────────────────────────────────
 function Field({ label, name, type = 'text', value, onChange, error, required, disabled, children }) {
     return (
         <div className="um-field">
@@ -61,7 +56,7 @@ function Field({ label, name, type = 'text', value, onChange, error, required, d
     );
 }
 
-// ── Badges ────────────────────────────────────────────────────
+// Badges
 function RoleBadge({ role, label }) {
     return (
         <span className={`um-role-badge um-role-badge--${role}`}>{label}</span>
@@ -76,7 +71,7 @@ function StatusBadge({ status }) {
     );
 }
 
-// ── Alert ─────────────────────────────────────────────────────
+// Alert
 function Alert({ type = 'danger', children }) {
     return (
         <div className={`um-alert um-alert--${type}`}>
@@ -93,7 +88,7 @@ function Success({ children }) {
     );
 }
 
-// ── Row Action Dropdown ───────────────────────────────────────
+// Row Action Dropdown
 // Uses position:fixed anchored to the button's bounding rect so
 // the menu always renders above table overflow:hidden clipping.
 function RowActions({ user, onEdit, onToggleStatus, onViewDetail }) {
@@ -133,7 +128,7 @@ function RowActions({ user, onEdit, onToggleStatus, onViewDetail }) {
                 <div
                     ref={menuRef}
                     className="um-action-menu"
-                    style={{ right: pos.right }}  /* only position values — not visual styles */
+                    style={{ right: pos.right }}
                 >
                     <button className="um-action-item" onClick={() => { onViewDetail(user); setOpen(false); }}>
                         <FaArrowUpRightFromSquare size={12} /> View Details
@@ -158,8 +153,8 @@ function RowActions({ user, onEdit, onToggleStatus, onViewDetail }) {
     );
 }
 
-// ── Pagination ────────────────────────────────────────────────
-function Pagination({ meta, onPageChange }) {
+//  Split
+function Split({ meta, onPageChange }) {
     if (!meta || meta.last_page <= 1) return null;
     const { current_page, last_page, from, to, total } = meta;
 
@@ -170,11 +165,11 @@ function Pagination({ meta, onPageChange }) {
     })();
 
     return (
-        <div className="um-pagination">
-            <span className="um-pagination__info">
+        <div className="um-split">
+            <span className="um-split__info">
                 Showing {from}–{to} of {total} users
             </span>
-            <div className="um-pagination__btns">
+            <div className="um-split__btns">
                 <button
                     className="um-page-btn"
                     onClick={() => onPageChange(current_page - 1)}
@@ -203,7 +198,7 @@ function Pagination({ meta, onPageChange }) {
     );
 }
 
-// ── Edit User Modal ───────────────────────────────────────────
+// Edit User
 const EDIT_TABS = [
     { id: 'profile',  label: 'Profile Info',   icon: FaUser   },
     { id: 'account',  label: 'Account & Role', icon: FaShield },
@@ -934,7 +929,7 @@ export default function UserManagement() {
                     </table>
                 </div>
 
-                <Pagination meta={meta} onPageChange={setPage} />
+                <Split meta={meta} onPageChange={setPage} />
             </div>
 
             {/* Modals */}

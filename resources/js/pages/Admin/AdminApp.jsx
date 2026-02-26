@@ -5,8 +5,8 @@ import TopNav             from './TopNav';
 import Dashboard          from './Dashboard/Dashboard';
 import UserManagement     from './UserManagement/UserManagement';
 
-// ── Page router ───────────────────────────────────────────────
-// Add new admin pages here as you build them.
+// Page router
+// Add new admin pages here
 const PAGE_MAP = {
     '/admin/dashboard': Dashboard,
     '/admin/users':     UserManagement,
