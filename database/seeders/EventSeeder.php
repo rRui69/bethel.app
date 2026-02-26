@@ -1,0 +1,135 @@
+<?php
+
+namespace Database\Seeders;
+
+use App\Models\Event;
+use App\Models\Parish;
+use App\Models\Clergy;
+use App\Models\User;
+use Illuminate\Database\Seeder;
+
+class EventSeeder extends Seeder
+{
+    public function run(): void
+    {
+        $parishMap  = Parish::pluck('id', 'name');
+        $clergyMap  = Clergy::pluck('id', 'last_name');
+        $parishioner = User::where('role', 'parishioner')->first();
+
+        $events = [
+            // ── Regular Events ─────────────────────────────
+            [
+                'parish_id'   => $parishMap['St. Peter Parish'],
+                'user_id'     => null,
+                'clergy_id'   => $clergyMap['Santos'],
+                'title'       => 'Stations of the Cross',
+                'description' => 'Weekly Stations of the Cross every Friday during Lent.',
+                'type'        => 'Liturgy',
+                'event_date'  => now()->addDays(5)->toDateString(),
+                'start_time'  => '17:00:00',
+                'end_time'    => '18:30:00',
+                'location'    => 'St. Peter Parish Chapel',
+                'status'      => 'Approved',
+            ],
+            [
+                'parish_id'   => $parishMap['Sacred Heart Parish'],
+                'user_id'     => null,
+                'clergy_id'   => null,
+                'title'       => 'Parish Leadership Summit',
+                'description' => 'Annual gathering of parish leaders and ministries.',
+                'type'        => 'Community',
+                'event_date'  => now()->addDays(10)->toDateString(),
+                'start_time'  => '09:00:00',
+                'end_time'    => '16:00:00',
+                'location'    => 'Sacred Heart Parish Hall',
+                'status'      => 'Approved',
+            ],
+            [
+                'parish_id'   => $parishMap['St. Mary Parish'],
+                'user_id'     => null,
+                'clergy_id'   => null,
+                'title'       => 'Youth Group Fellowship Night',
+                'description' => 'Monthly fellowship for the parish youth ministry.',
+                'type'        => 'Youth',
+                'event_date'  => now()->addDays(14)->toDateString(),
+                'start_time'  => '19:00:00',
+                'end_time'    => '21:00:00',
+                'location'    => 'St. Mary Parish Hall',
+                'status'      => 'Approved',
+            ],
+
+            // ── Sacramental Requests ───────────────────────
+            [
+                'parish_id'       => $parishMap['St. Peter Parish'],
+                'user_id'         => $parishioner?->id,
+                'clergy_id'       => $clergyMap['Santos'],
+                'title'           => 'Baptism Request — Baby Juan dela Cruz',
+                'description'     => 'Baptism for newborn Juan dela Cruz.',
+                'type'            => 'Baptism',
+                'event_date'      => now()->addDays(20)->toDateString(),
+                'start_time'      => '10:00:00',
+                'location'        => 'St. Peter Parish',
+                'status'          => 'Pending',
+                'sacrament_details' => json_encode([
+                    'child_name'  => 'Juan dela Cruz',
+                    'parents'     => 'Pedro & Maria dela Cruz',
+                    'godparents'  => ['Jose Rizal', 'Andres Bonifacio'],
+                ]),
+            ],
+            [
+                'parish_id'       => $parishMap['Sacred Heart Parish'],
+                'user_id'         => $parishioner?->id,
+                'clergy_id'       => $clergyMap['Cruz'],
+                'title'           => 'Marriage Request — Dela Cruz & Santos',
+                'description'     => 'Wedding ceremony for couple.',
+                'type'            => 'Marriage',
+                'event_date'      => now()->addDays(45)->toDateString(),
+                'start_time'      => '09:00:00',
+                'location'        => 'Sacred Heart Parish',
+                'status'          => 'Pending',
+                'sacrament_details' => json_encode([
+                    'groom' => 'Pedro Dela Cruz',
+                    'bride' => 'Ana Santos',
+                    'sponsors' => ['Mr. Juan Reyes', 'Mrs. Rosa Garcia'],
+                ]),
+            ],
+            [
+                'parish_id'       => $parishMap['St. Mary Parish'],
+                'user_id'         => $parishioner?->id,
+                'clergy_id'       => $clergyMap['Reyes'],
+                'title'           => 'Confirmation Request — Maria Santos',
+                'description'     => 'Confirmation sacrament for Maria Santos.',
+                'type'            => 'Confirmation',
+                'event_date'      => now()->addDays(30)->toDateString(),
+                'start_time'      => '14:00:00',
+                'location'        => 'St. Mary Parish',
+                'status'          => 'Approved',
+                'sacrament_details' => json_encode([
+                    'candidate'  => 'Maria Santos',
+                    'sponsor'    => 'Lola Rosa Santos',
+                ]),
+            ],
+            [
+                'parish_id'       => $parishMap['Our Lady of Peace Parish'],
+                'user_id'         => $parishioner?->id,
+                'clergy_id'       => $clergyMap['Villanueva'],
+                'title'           => 'Anointing Request — Lolo Jose Reyes',
+                'description'     => 'Anointing of the Sick for elderly patient.',
+                'type'            => 'Anointing',
+                'event_date'      => now()->addDays(3)->toDateString(),
+                'start_time'      => '10:00:00',
+                'location'        => 'Residence — Antipolo',
+                'status'          => 'Pending',
+                'sacrament_details' => json_encode([
+                    'patient'   => 'Jose Reyes',
+                    'condition' => 'Critically ill',
+                    'contact'   => '09171234567',
+                ]),
+            ],
+        ];
+
+        foreach ($events as $event) {
+            Event::create($event);
+        }
+    }
+}

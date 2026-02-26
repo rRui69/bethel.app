@@ -1,0 +1,42 @@
+# ============================================================
+# .gitattributes — Bethel App
+# Forces LF line endings on all text files regardless of OS.
+# Fixes the CRLF (\r\n) issue found in Admin PHP controllers.
+# ============================================================
+
+* text=auto eol=lf
+
+# PHP
+*.php text eol=lf
+*.blade.php text eol=lf
+
+# Web assets
+*.js text eol=lf
+*.jsx text eol=lf
+*.css text eol=lf
+*.json text eol=lf
+*.ts text eol=lf
+*.tsx text eol=lf
+
+# Config
+*.yml text eol=lf
+*.yaml text eol=lf
+*.xml text eol=lf
+*.env text eol=lf
+*.env.example text eol=lf
+*.md text eol=lf
+Makefile text eol=lf
+
+# Binary — never touch
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.gif binary
+*.ico binary
+*.svg text eol=lf
+*.woff binary
+*.woff2 binary
+*.ttf binary
+*.eot binary
+*.zip binary
+*.pdf binary

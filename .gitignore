@@ -1,0 +1,51 @@
+# ============================================================
+# Laravel .gitignore — Bethel App
+# ============================================================
+
+# Environment — NEVER commit this
+.env
+.env.backup
+.env.production
+
+# Dependencies
+/vendor
+/node_modules
+
+# Build output
+/public/build
+/public/hot
+/public/storage
+/storage/*.key
+
+# Compiled assets
+*.css.map
+*.js.map
+
+# Laravel generated
+bootstrap/cache/*.php
+!bootstrap/cache/.gitkeep
+
+# Logs
+/storage/logs/*.log
+
+# SQLite (local dev only)
+/database/*.sqlite
+/database/*.sqlite-journal
+
+# OS
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# IDE
+.idea
+.vscode
+*.swp
+*.swo
+.phpunit.result.cache
+
+# Testing
+/.phpunit.cache
+
+# Sail
+/.sail
