@@ -38,7 +38,7 @@ const CARDS = [
     {
         id:       'Events',
         label:    'Scheduled Events',
-        key:      'scheduled_events',
+        key:      'active_events',
         icon:     FaChurch,
         iconBg:   'rgba(16,185,129,0.15)',
         iconColor:'#10b981',

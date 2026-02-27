@@ -2,135 +2,96 @@
 
 namespace App\Http\Controllers;
 
-use Illuminate\Http\Request;
+use App\Models\Parish;
+use App\Models\Announcement;
+use App\Models\Event;
+use App\Models\Clergy;
+use Carbon\Carbon;
 
 class HomeController extends Controller
 {
     public function index()
     {
-        /**
-         * Placeholder data — replace with Eloquent models once DB is set up.
-         * Pattern: pass structured arrays; React receives via window.__PAGE_DATA__
-         */
-        $pageData = [
+        // Parishes
+        // Active parishes only, ordered by name, for the hero search bar
+        $parishes = Parish::active()
+            ->select('id', 'name', 'city')
+            ->orderBy('name')
+            ->get()
+            ->map(fn ($p) => [
+                'id'       => $p->id,
+                'name'     => $p->name,
+                'location' => $p->city,
+            ])
+            ->toArray();
 
-            'parishes' => [
-                ['id' => 1, 'name' => 'St. Peter Parish',       'location' => 'Quezon City'],
-                ['id' => 2, 'name' => 'St. Mary Parish',        'location' => 'Manila'],
-                ['id' => 3, 'name' => 'Sacred Heart Parish',    'location' => 'Makati'],
-                ['id' => 4, 'name' => 'Sto. Niño Parish',       'location' => 'Pasig'],
-                ['id' => 5, 'name' => 'St. Joseph Parish',      'location' => 'Taguig'],
-                ['id' => 6, 'name' => 'Our Lady of Peace',      'location' => 'Antipolo'],
-            ],
+        // Announcements
+        // Latest 4 published announcements for the home page cards
+        $announcements = Announcement::published()
+            ->with('parish:id,name')
+            ->select('id', 'parish_id', 'title', 'excerpt', 'category', 'image_path', 'published_at')
+            ->latest('published_at')
+            ->take(4)
+            ->get()
+            ->map(fn ($a) => [
+                'id'       => $a->id,
+                'title'    => $a->title,
+                'excerpt'  => $a->excerpt,
+                'category' => $a->category,
+                'parish'   => $a->parish?->name,
+                'date'     => $a->published_at?->toDateString(),
+                'image'    => $a->image_path,
+            ])
+            ->toArray();
 
-            'announcements' => [
-                [
-                    'id'      => 1,
-                    'title'   => 'Holy Week Schedule 2025',
-                    'excerpt' => 'Join us for our special Holy Week celebrations. Masses will be held daily from Palm Sunday through Easter Sunday with special rites each evening.',
-                    'category'=> 'Liturgy',
-                    'parish'  => 'St. Peter Parish',
-                    'date'    => '2025-04-13',
-                    'image'   => null,
-                ],
-                [
-                    'id'      => 2,
-                    'title'   => 'Parish Fiesta: Patron Saint Feast Day',
-                    'excerpt' => 'Celebrate with us! Join the procession, mass, and community lunch.',
-                    'category'=> 'Community',
-                    'parish'  => 'Sacred Heart Parish',
-                    'date'    => '2025-04-20',
-                    'image'   => null,
-                ],
-                [
-                    'id'      => 3,
-                    'title'   => 'Youth Ministry Retreat Registration Open',
-                    'excerpt' => 'Registration is now open for the annual youth retreat. Limited slots available.',
-                    'category'=> 'Youth',
-                    'parish'  => 'St. Mary Parish',
-                    'date'    => '2025-04-25',
-                    'image'   => null,
-                ],
-                [
-                    'id'      => 4,
-                    'title'   => 'Baptism Orientation for New Parents',
-                    'excerpt' => 'Mandatory orientation before baptismal scheduling. Couples must attend.',
-                    'category'=> 'Parish News',
-                    'parish'  => 'St. Joseph Parish',
-                    'date'    => '2025-04-28',
-                    'image'   => null,
-                ],
-            ],
+        // Mass Schedules
+        // Pull from clergy schedules (stored as JSON per clergy record).
+        // Each clergy has an array of { day, time, type } schedule entries.
+        // We flatten them all and attach the parish name for display.
+        $schedules = Clergy::with('parish:id,name,city')
+            ->where('status', 'Active')
+            ->whereNotNull('schedule')
+            ->get()
+            ->flatMap(function ($clergy) {
+                $raw   = $clergy->getRawOriginal('schedule');
+                $slots = is_array($clergy->schedule)
+                    ? $clergy->schedule
+                    : (json_decode($raw, true) ?? []);
 
-            'schedules' => [
-                ['day' => 'Sunday',    'time' => '6:00 AM',  'type' => 'Regular Mass', 'parish' => 'St. Peter Parish',    'location' => 'Quezon City',  'celebrant' => 'Fr. Santos'],
-                ['day' => 'Sunday',    'time' => '8:00 AM',  'type' => 'Regular Mass', 'parish' => 'St. Mary Parish',     'location' => 'Manila',       'celebrant' => 'Fr. Reyes'],
-                ['day' => 'Sunday',    'time' => '10:00 AM', 'type' => 'Family Mass',  'parish' => 'Sacred Heart Parish', 'location' => 'Makati',       'celebrant' => 'Fr. Cruz'],
-                ['day' => 'Sunday',    'time' => '12:00 PM', 'type' => 'Youth Mass',   'parish' => 'Sto. Niño Parish',    'location' => 'Pasig',        'celebrant' => 'Fr. Dela Cruz'],
-                ['day' => 'Saturday',  'time' => '6:00 AM',  'type' => 'Regular Mass', 'parish' => 'St. Peter Parish',    'location' => 'Quezon City',  'celebrant' => 'Fr. Santos'],
-                ['day' => 'Saturday',  'time' => '5:00 PM',  'type' => 'Anticipated',  'parish' => 'Sacred Heart Parish', 'location' => 'Makati',       'celebrant' => 'Fr. Cruz'],
-                ['day' => 'Wednesday', 'time' => '6:00 AM',  'type' => 'Daily Mass',   'parish' => 'St. Mary Parish',     'location' => 'Manila',       'celebrant' => 'Fr. Reyes'],
-                ['day' => 'Wednesday', 'time' => '6:00 PM',  'type' => 'Evening Mass', 'parish' => 'St. Peter Parish',    'location' => 'Quezon City',  'celebrant' => 'Fr. Santos'],
-                ['day' => 'Friday',    'time' => '6:00 AM',  'type' => 'Daily Mass',   'parish' => 'St. Joseph Parish',   'location' => 'Taguig',       'celebrant' => 'Fr. Villanueva'],
-            ],
+                return collect($slots)->map(fn ($slot) => [
+                    'day'       => $slot['day']  ?? '',
+                    'time'      => $slot['time'] ?? '',
+                    'type'      => $slot['type'] ?? 'Regular Mass',
+                    'parish'    => $clergy->parish?->name ?? '',
+                    'location'  => $clergy->parish?->city ?? '',
+                    'celebrant' => $clergy->full_name,
+                ]);
+            })
+            ->values()
+            ->toArray();
 
-            'events' => [
-                [
-                    'id'       => 1,
-                    'title'    => 'Stations of the Cross',
-                    'type'     => 'Liturgy',
-                    'date'     => '2025-04-11',
-                    'time'     => '5:00 PM',
-                    'location' => 'St. Peter Parish, QC',
-                    'parish'   => 'St. Peter Parish',
-                ],
-                [
-                    'id'       => 2,
-                    'title'    => 'Parish Leadership Summit',
-                    'type'     => 'Community',
-                    'date'     => '2025-04-19',
-                    'time'     => '9:00 AM – 4:00 PM',
-                    'location' => 'Sacred Heart Parish Hall, Makati',
-                    'parish'   => 'Sacred Heart Parish',
-                ],
-                [
-                    'id'       => 3,
-                    'title'    => 'Youth Group Fellowship Night',
-                    'type'     => 'Youth',
-                    'date'     => '2025-04-26',
-                    'time'     => '7:00 PM',
-                    'location' => 'St. Mary Parish Hall, Manila',
-                    'parish'   => 'St. Mary Parish',
-                ],
-                [
-                    'id'       => 4,
-                    'title'    => 'Pre-Baptism Seminar',
-                    'type'     => 'Sacramental',
-                    'date'     => '2025-04-30',
-                    'time'     => '10:00 AM',
-                    'location' => 'St. Joseph Parish, Taguig',
-                    'parish'   => 'St. Joseph Parish',
-                ],
-                [
-                    'id'       => 5,
-                    'title'    => 'Marriage Encounter Weekend',
-                    'type'     => 'Sacramental',
-                    'date'     => '2025-05-03',
-                    'time'     => 'All Day',
-                    'location' => 'Our Lady of Peace, Antipolo',
-                    'parish'   => 'Our Lady of Peace',
-                ],
-                [
-                    'id'       => 6,
-                    'title'    => 'Choir Competition Inter-Parish',
-                    'type'     => 'Community',
-                    'date'     => '2025-05-10',
-                    'time'     => '2:00 PM',
-                    'location' => 'Sto. Niño Parish, Pasig',
-                    'parish'   => 'Sto. Niño Parish',
-                ],
-            ],
-        ];
+        // Upcoming Events
+        // Regular (non-sacramental) approved events, upcoming, max 6
+        $events = Event::regular()
+            ->with('parish:id,name,city')
+            ->where('status', 'Approved')
+            ->upcoming()
+            ->take(6)
+            ->get()
+            ->map(fn ($e) => [
+                'id'       => $e->id,
+                'title'    => $e->title,
+                'type'     => $e->type,
+                'date'     => $e->event_date->toDateString(),
+                'time'     => $e->start_time
+                                ? Carbon::createFromTimeString($e->start_time)->format('g:i A')
+                                : 'TBA',
+                'location' => $e->location ?? $e->parish?->city ?? '',
+                'parish'   => $e->parish?->name ?? '',
+            ])
+            ->toArray();
+
+        $pageData = compact('parishes', 'announcements', 'schedules', 'events');
 
         return view('parishioner.home', compact('pageData'));
     }

@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-// ── React Icons ────────────────────────────────────────────────────────────
+// React Icons
 import { FaNewspaper, FaBullhorn, FaArrowRight, FaCalendar, FaChurch } from 'react-icons/fa6';
 
 const PLACEHOLDER_IMG = 'https://placehold.co/600x400/1a3c5e/ffffff?text=BethelApp';
@@ -17,7 +17,6 @@ function FeaturedCard({ item }) {
         return (
             <div className="card border-0 shadow-sm h-100 bethel-card d-flex align-items-center justify-content-center py-5">
                 <div className="text-center text-muted">
-                    {/* ── ICON: swap FaNewspaper with any react-icons component ── */}
                     <FaNewspaper size={40} className="d-block mb-2 mx-auto" style={{ opacity: 0.3, color: 'var(--bethel-primary)' }} />
                     <p>No announcements yet</p>
                 </div>
@@ -163,7 +162,7 @@ export default function AnnouncementCards({ announcements = [] }) {
                                 ? secondary.map((item, i) => <SmallCard key={item.id ?? i} item={item} />)
                                 : (
                                     <div className="text-center text-muted py-5">
-                                        <FaMegaphone size={40} className="d-block mb-2 mx-auto" style={{ opacity: 0.25, color: 'var(--bethel-primary)' }} />
+                                        <FaBullhorn size={40} className="d-block mb-2 mx-auto" style={{ opacity: 0.25, color: 'var(--bethel-primary)' }} />
                                         <p style={{ fontSize: '0.875rem' }}>No other announcements in this category.</p>
                                     </div>
                                 )
