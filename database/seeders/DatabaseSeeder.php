@@ -10,9 +10,9 @@ class DatabaseSeeder extends Seeder
     {
         // ── ORDER MATTERS ──
         $this->call([
-            // 1. Users first (no dependencies)
+            // 1. Users first 
             \Database\Seeders\UserSeeder::class,
-            // 2. Parishes (no dependencies)
+            // 2. Parishes 
             \Database\Seeders\ParishSeeder::class,
             // 3. Clergy (depends on parishes)
             \Database\Seeders\ClergySeeder::class,

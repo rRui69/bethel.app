@@ -1,5 +1,4 @@
 import React, { useState } from 'react';
-// React Icons
 import { FaNewspaper, FaBullhorn, FaArrowRight, FaCalendar, FaChurch } from 'react-icons/fa6';
 
 const PLACEHOLDER_IMG = 'https://placehold.co/600x400/1a3c5e/ffffff?text=BethelApp';
@@ -17,6 +16,7 @@ function FeaturedCard({ item }) {
         return (
             <div className="card border-0 shadow-sm h-100 bethel-card d-flex align-items-center justify-content-center py-5">
                 <div className="text-center text-muted">
+                    {/* ── ICON: swap FaNewspaper with any react-icons component ── */}
                     <FaNewspaper size={40} className="d-block mb-2 mx-auto" style={{ opacity: 0.3, color: 'var(--bethel-primary)' }} />
                     <p>No announcements yet</p>
                 </div>

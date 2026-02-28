@@ -13,7 +13,7 @@ class HomeController extends Controller
     public function index()
     {
         // Parishes
-        // Active parishes only, ordered by name, for the hero search bar
+        // Active parishes only, ordered by name, for search bar
         $parishes = Parish::active()
             ->select('id', 'name', 'city')
             ->orderBy('name')
@@ -26,7 +26,7 @@ class HomeController extends Controller
             ->toArray();
 
         // Announcements
-        // Latest 4 published announcements for the home page cards
+        // Latest 4 published announcements for home page cards
         $announcements = Announcement::published()
             ->with('parish:id,name')
             ->select('id', 'parish_id', 'title', 'excerpt', 'category', 'image_path', 'published_at')
@@ -45,9 +45,9 @@ class HomeController extends Controller
             ->toArray();
 
         // Mass Schedules
-        // Pull from clergy schedules (stored as JSON per clergy record).
-        // Each clergy has an array of { day, time, type } schedule entries.
-        // We flatten them all and attach the parish name for display.
+        // Pull from clergy schedules
+        // Each clergy has array { day, time, type } schedule entries.
+        // Attach the parish name for display.
         $schedules = Clergy::with('parish:id,name,city')
             ->where('status', 'Active')
             ->whereNotNull('schedule')
