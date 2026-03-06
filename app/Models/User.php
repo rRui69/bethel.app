@@ -3,6 +3,8 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
@@ -10,8 +12,8 @@ use Illuminate\Notifications\Notifiable;
 class User extends Authenticatable
 {
     use HasFactory, Notifiable, SoftDeletes;
-
     protected $fillable = [
+        'parish_id', // <-- ADDED
         'username', 'email', 'password', 'role', 'account_status',
         'first_name', 'middle_name', 'last_name', 'birth_date', 'gender',
         'phone', 'country', 'province', 'city', 'barangay',
@@ -54,4 +56,15 @@ class User extends Authenticatable
     // ── Helpers ─────────────────────────────────────────────────────
     public function isSuperAdmin(): bool { return $this->role === 'super_admin'; }
     public function isAdmin(): bool      { return in_array($this->role, ['super_admin', 'parish_admin', 'clergymen']); }
+
+    public function sacramentRequests(): HasMany
+    {
+        return $this->hasMany(SacramentRequest::class);
+    }
+    
+    public function parish(): BelongsTo
+    {
+        return $this->belongsTo(Parish::class);
+    }
+    
 }

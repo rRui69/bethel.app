@@ -1,5 +1,5 @@
 /* ══════════════════════════════════════════════════════════════
-   BETHELAPP ADMIN — Vision UI Inspired
+   BETHELAPP ADMIN — UI
    Dark/Light theme via [data-theme] on <html>
 ══════════════════════════════════════════════════════════════ */
 
@@ -16,13 +16,13 @@
     --sidebar-collapsed:  72px;
     --topnav-height:      70px;
 
-    /* ── User Management overlay darkness ───────────────────
+    /* ── darkness ───────────────────
        Adjust this single value to control modal backdrop:
        0.3 = subtle | 0.55 = default | 0.85 = very dark     */
     --um-overlay-opacity: 0.55;
 }
 
-/* ── Dark Theme (default) ──────────────────────────────────── */
+/*  Dark Theme  */
 [data-theme="dark"] {
     --bg-page:        #002147;
     --bg-sidebar:     #0d1f38;
@@ -40,7 +40,7 @@
     --glass-blur:     blur(12px);
 }
 
-/* ── Light Theme ───────────────────────────────────────────── */
+/*  Light Theme  */
 [data-theme="light"] {
     --bg-page:        #f0f4f9;
     --bg-sidebar:     #1a3c5e;
@@ -58,7 +58,7 @@
     --glass-blur:     blur(12px);
 }
 
-/* ── Reset ─────────────────────────────────────────────────── */
+/*  Reset  */
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
 html, body, #bethel-admin {
@@ -1536,7 +1536,7 @@ body {
     word-break: break-word;
 }
 
-/* ── Loading / Empty States ────────────────────────────────── */
+/*  Loading / Empty States  */
 .um-table-empty {
     text-align: center;
     padding: 3rem;
@@ -1557,3 +1557,218 @@ body {
     margin-bottom: 1.25rem;
     line-height: 1.6;
 }
+
+/* ══════════════════════════════════════════════════════════════
+   MODAL BACKDROP
+   Used by EventManagement and AnnouncementManagement modals.
+   Identical behaviour to .um-overlay — defined here so one
+   CSS change controls all admin modal backdrops.
+══════════════════════════════════════════════════════════════ */
+.um-modal-backdrop {
+    position: fixed;
+    inset: 0;
+    z-index: 1050;
+    background: rgba(0, 0, 0, var(--um-overlay-opacity));
+    backdrop-filter: blur(3px);
+    -webkit-backdrop-filter: blur(3px);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 1rem;
+    animation: umBackdropIn 0.15s ease-out;
+}
+
+@keyframes umBackdropIn {
+    from { opacity: 0; }
+    to   { opacity: 1; }
+}
+
+
+/* ══════════════════════════════════════════════════════════════
+   BOOTSTRAP OVERRIDES — Theme-aware
+   All Bootstrap utility classes inside .admin-shell now read
+   from CSS variables. Change a variable in [data-theme] above
+   and it propagates to every table, card, and form in the admin.
+══════════════════════════════════════════════════════════════ */
+
+/* ── Tables ──────────────────────────────────────────────── */
+.admin-shell .table {
+    color: var(--text-primary);
+    border-color: var(--border-color);
+}
+
+/* thead.table-light — Bootstrap hardcodes #f8f9fa; we override */
+.admin-shell .table-light,
+.admin-shell .table > :not(caption) > * > * {
+    background-color: transparent;
+    color: inherit;
+    border-color: var(--border-color);
+}
+
+.admin-shell .table > thead > tr > th,
+.admin-shell .table > thead > tr > td {
+    background-color: var(--bg-card) !important;
+    color: var(--text-muted) !important;
+    border-color: var(--border-color) !important;
+}
+
+.admin-shell .table > tbody > tr > td {
+    background-color: transparent;
+    color: var(--text-secondary);
+    border-color: var(--border-color);
+}
+
+.admin-shell .table-hover > tbody > tr:hover > * {
+    background-color: var(--bg-card-hover) !important;
+    color: var(--text-primary) !important;
+}
+
+/* ── Cards ───────────────────────────────────────────────── */
+.admin-shell .card {
+    background-color: var(--bg-card);
+    border-color: var(--border-color);
+    color: var(--text-primary);
+}
+
+.admin-shell .card-header {
+    background-color: var(--bg-card);
+    border-color: var(--border-color);
+    color: var(--text-primary);
+}
+
+.admin-shell .card-footer {
+    background-color: var(--bg-card);
+    border-color: var(--border-color);
+    color: var(--text-secondary);
+}
+
+.admin-shell .card-body {
+    color: var(--text-primary);
+}
+
+/* ── Form controls ───────────────────────────────────────── */
+.admin-shell .form-control,
+.admin-shell .form-select {
+    background-color: var(--bg-input);
+    border-color: var(--border-color);
+    color: var(--text-primary);
+}
+
+.admin-shell .form-control:focus,
+.admin-shell .form-select:focus {
+    background-color: var(--bg-input);
+    border-color: var(--admin-accent);
+    color: var(--text-primary);
+    box-shadow: 0 0 0 0.2rem var(--admin-gold-glow);
+}
+
+.admin-shell .form-control::placeholder {
+    color: var(--text-muted);
+}
+
+.admin-shell .input-group-text {
+    background-color: var(--bg-input);
+    border-color: var(--border-color);
+    color: var(--text-muted);
+}
+
+.admin-shell .form-label {
+    color: var(--text-secondary);
+}
+
+.admin-shell .form-text {
+    color: var(--text-muted);
+}
+
+/* ── Text utilities ──────────────────────────────────────── */
+.admin-shell .text-muted {
+    color: var(--text-muted) !important;
+}
+
+/* ── Outline action buttons in table rows ────────────────── */
+.admin-shell .btn-outline-primary {
+    color: var(--admin-accent);
+    border-color: var(--admin-accent);
+}
+
+.admin-shell .btn-outline-primary:hover {
+    background-color: var(--admin-accent);
+    color: var(--admin-navy);
+    border-color: var(--admin-accent);
+}
+
+.admin-shell .btn-outline-secondary {
+    color: var(--text-secondary);
+    border-color: var(--border-color);
+}
+
+.admin-shell .btn-outline-secondary:hover {
+    background-color: var(--bg-hover);
+    color: var(--text-primary);
+    border-color: var(--border-color);
+}
+
+.admin-shell .btn-outline-danger {
+    color: #ef4444;
+    border-color: rgba(239, 68, 68, 0.5);
+}
+
+.admin-shell .btn-outline-danger:hover {
+    background-color: rgba(239, 68, 68, 0.12);
+    color: #ef4444;
+    border-color: #ef4444;
+}
+
+/* Disabled pagination / action buttons */
+.admin-shell .btn:disabled,
+.admin-shell .btn[disabled] {
+    opacity: 0.35;
+}
+
+/* ── Stat cards in Management pages ──────────────────────── */
+.admin-shell .border-primary  { border-color: #3b82f6 !important; }
+.admin-shell .border-info     { border-color: #06b6d4 !important; }
+.admin-shell .border-success  { border-color: #10b981 !important; }
+.admin-shell .border-warning  { border-color: #f59e0b !important; }
+.admin-shell .border-secondary{ border-color: var(--border-color) !important; }
+
+/* ── Alert overrides ─────────────────────────────────────── */
+.admin-shell .alert-danger {
+    background-color: rgba(239, 68, 68, 0.1);
+    border-color: rgba(239, 68, 68, 0.3);
+    color: #ef4444;
+}
+/* ══════════════════════════════════════════════════════════════
+   SACRAMENT REQUEST STATUS BADGES
+══════════════════════════════════════════════════════════════ */
+.sr-status-badge {
+    display: inline-flex;
+    align-items: center;
+    padding: 0.22rem 0.65rem;
+    border-radius: 50px;
+    font-size: 0.7rem;
+    font-weight: 700;
+    letter-spacing: 0.3px;
+    text-transform: capitalize;
+}
+
+.sr-status-badge--pending  { background: rgba(245,158,11,0.15);  color: #d97706; }
+.sr-status-badge--approved { background: rgba(16,185,129,0.15);  color: #059669; }
+.sr-status-badge--rejected { background: rgba(239,68,68,0.15);   color: #dc2626; }
+
+/* Action buttons in the sacrament requests table */
+.sr-action-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 28px;
+    height: 28px;
+    border: none;
+    border-radius: 50%;
+    cursor: pointer;
+    transition: opacity 0.15s;
+    font-size: 0.75rem;
+}
+.sr-action-btn:hover { opacity: 0.75; }
+.sr-action-btn--approve { background: rgba(16,185,129,0.15); color: #059669; }
+.sr-action-btn--reject  { background: rgba(239,68,68,0.15);  color: #dc2626; }
