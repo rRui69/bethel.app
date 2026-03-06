@@ -1,6 +1,6 @@
 @extends('layouts.admin')
 
-@section('title', 'User Management')
+@section('title', 'Sacrament Requests')
 
 @push('head')
 <script>
@@ -9,5 +9,5 @@
 @endpush
 
 @section('content')
-
+    <div id="bethel-admin-app"></div>
 @endsection

@@ -42,6 +42,26 @@ class LoginRequest extends FormRequest
             ]);
         }
 
+        // Account Status Guard
+        // Credentials are valid, but the account may be deactivated or suspended.
+        // We must log the user out and reject the login before the session is used.
+        $user = Auth::user();
+
+        if ($user->account_status !== 'Active') {
+            Auth::logout();
+            RateLimiter::hit($this->throttleKey());
+
+            $message = match ($user->account_status) {
+                'Inactive'  => 'Your account has been deactivated. Please contact the parish administrator.',
+                'Suspended' => 'Your account has been suspended. Please contact the parish administrator.',
+                default     => 'Your account is not currently active.',
+            };
+
+            throw ValidationException::withMessages([
+                'username' => $message,
+            ]);
+        }
+
         RateLimiter::clear($this->throttleKey());
     }
 

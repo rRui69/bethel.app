@@ -388,7 +388,7 @@ function EditUserModal({ userId, onClose, onUpdated, onDeleted }) {
                                     <div className="um-grid-2">
                                         <Field label="Phone Number" name="phone" value={profile.phone} onChange={e => {
                                             // Remove non-numeric characters
-                                            const digitsOnly = e.target.value.replace(/\D/g, '');
+                                            let digitsOnly = e.target.value.replace(/\D/g, '');
                                             if (digitsOnly.length > 10) digitsOnly = digitsOnly.slice(0, 10);
                                             
                                             setProfile(prev => ({ ...prev, phone: digitsOnly }));

@@ -64,19 +64,7 @@ const NAV_SECTIONS = [
             },
         ],
     },
-    {
-        section: 'System',
-        items: [
-            {
-                id:    'roles',
-                label: 'Roles & Permissions',
-                icon:  FaShield,
-                href:  '/admin/roles',
-                badge: null,
-                roles: ['super_admin'],
-            },
-        ],
-    },
+    // Future sections can be added here
 ];
 
 function NavItem({ item, collapsed, stats }) {

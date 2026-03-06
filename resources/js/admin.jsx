@@ -17,6 +17,7 @@ if (el) {
                 stats={data.stats}
                 admin={data.admin}
                 parishes={data.parishes}
+                clergy={data.clergy}
                 notifications={data.notifications}
             />
         </React.StrictMode>
