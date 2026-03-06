@@ -11,13 +11,10 @@ return Application::configure(basePath: dirname(__DIR__))
         health: '/up',
     )
     ->withMiddleware(function (Middleware $middleware) {
+        $middleware->trustProxies(at: '*');
         $middleware->validateCsrfTokens(except: [
             '*',
         ]);
-
-        // ── Middleware Aliases ────────────────────────────────────────
-        // 'admin' replaces the old misnamed 'super_admin' alias
-        // Used in routes/web.php: ->middleware(['auth', 'admin'])
         $middleware->alias([
             'admin' => \App\Http\Middleware\EnsureAdminRole::class,
         ]);
