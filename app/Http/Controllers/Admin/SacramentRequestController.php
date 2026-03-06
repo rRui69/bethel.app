@@ -29,7 +29,7 @@ class SacramentRequestController extends AdminBaseController
         $direction = $request->direction === 'asc' ? 'asc' : 'desc';
         $query->orderBy($sort, $direction);
 
-        $requests = $query->paginate($request->get('limit', 10))->through(fn ($req) => [
+        $requests = $query->paginate($request->input('limit', 10))->through(fn ($req) => [
             'id'              => $req->id,
             'requester_name'  => $req->user?->full_name ?? 'Unknown',
             'requester_email' => $req->user?->email ?? '',
