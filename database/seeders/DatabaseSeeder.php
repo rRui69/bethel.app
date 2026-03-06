@@ -22,6 +22,8 @@ class DatabaseSeeder extends Seeder
             \Database\Seeders\AnnouncementSeeder::class,
             // 6. Notifications (depends on users, events)
             \Database\Seeders\NotificationSeeder::class,
+            // 7. Sacrament Requests (depends on users, parishes)
+            \Database\Seeders\SacramentRequestSeeder::class,
         ]);
     }
 }

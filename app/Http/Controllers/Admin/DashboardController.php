@@ -3,20 +3,29 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Models\Parish;
+use Illuminate\Http\Request;
 
 class DashboardController extends AdminBaseController
 {
-    public function index()
+    public function index(Request $request)
     {
-        // Start with the common shell data
         $adminData = $this->adminShellData();
+        $user = auth()->user();
 
-        // Override parishes with the full table data (dashboard-specific)
-        $adminData['parishes'] = Parish::select('id', 'name', 'city', 'status')
+        // 1. Base query to fetch parishes and their pending sacramental requests
+        $query = Parish::select('id', 'name', 'city', 'status')
             ->withCount([
                 'events as pending_requests' => fn ($q) => $q->sacramental()->pending(),
-            ])
-            ->orderBy('name')
+            ]);
+
+        // 2. SECURITY: Tenant Isolation
+        // If the user is not a super_admin, lock the dashboard to their specific parish
+        if (!$user->isSuperAdmin()) {
+            $query->where('id', $user->parish_id);
+        }
+
+        // 3. Execute and map the data
+        $adminData['parishes'] = $query->orderBy('name')
             ->get()
             ->map(fn ($parish) => [
                 'id'               => $parish->id,

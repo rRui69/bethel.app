@@ -27,6 +27,11 @@ return new class extends Migration
         $table->text('description')->nullable();
         $table->timestamps();
     });
+
+    // ADDED: Now that 'parishes' exists, we can safely enforce the foreign key on 'users'
+    Schema::table('users', function (Blueprint $table) {
+        $table->foreign('parish_id')->references('id')->on('parishes')->cascadeOnDelete();
+    });
 }
 
     /**
@@ -34,6 +39,9 @@ return new class extends Migration
      */
     public function down(): void
     {
+        Schema::table('users', function (Blueprint $table) {
+            $table->dropForeign(['parish_id']);
+        });
         Schema::dropIfExists('parishes');
     }
 };
