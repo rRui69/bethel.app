@@ -25,8 +25,15 @@ Route::get('/contact',                     fn () => view('coming-soon'))->name('
 require __DIR__.'/auth.php';
 
 Route::middleware('auth')->group(function () {
-    Route::get('/profile',     fn () => view('coming-soon'))->name('profile');
+    Route::get('/profile',     [\App\Http\Controllers\ProfileController::class, 'page'])->name('profile');
     Route::get('/my-bookings', fn () => view('coming-soon'))->name('bookings');
+
+    // Profile API — all authenticated users (any role)
+    Route::prefix('api/profile')->name('api.profile.')->group(function () {
+        Route::get('/',          [\App\Http\Controllers\ProfileController::class, 'show'])->name('show');
+        Route::patch('/',        [\App\Http\Controllers\ProfileController::class, 'update'])->name('update');
+        Route::post('/password', [\App\Http\Controllers\ProfileController::class, 'changePassword'])->name('password');
+    });
 });
 
 Route::prefix('admin')

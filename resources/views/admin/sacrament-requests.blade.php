@@ -9,5 +9,4 @@
 @endpush
 
 @section('content')
-    <div id="bethel-admin-app"></div>
 @endsection

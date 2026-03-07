@@ -43,7 +43,7 @@
         </button>
 
         {{-- Desktop Nav --}}
-        <div class="collapse navbar-collapse" id="desktopNav">
+        <div class="d-none d-lg-flex align-items-center w-100" id="desktopNav">
             <ul class="navbar-nav mx-auto gap-1">
                 <li class="nav-item">
                     <a class="nav-link {{ request()->is('/') ? 'active' : '' }}"

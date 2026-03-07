@@ -14,7 +14,7 @@ import AnnouncementsPage      from './pages/Announcements/AnnouncementsPage';
 import AnnouncementDetailPage from './pages/Announcements/AnnouncementDetailPage';
 import EventsPage             from './pages/Events/EventsPage';
 import EventDetailPage        from './pages/Events/EventDetailPage';
-import AdminApp               from './pages/Admin/AdminApp';
+import ProfilePage            from './pages/Profile/ProfilePage';
 
 const PAGE_REGISTRY = [
     { id: 'bethel-home',                Component: Home                   },
@@ -28,7 +28,7 @@ const PAGE_REGISTRY = [
     { id: 'bethel-announcement-detail', Component: AnnouncementDetailPage },
     { id: 'bethel-events-page',         Component: EventsPage             },
     { id: 'bethel-event-detail',        Component: EventDetailPage        },
-    { id: 'bethel-admin-app',           Component: AdminApp               },
+    { id: 'bethel-profile',             Component: ProfilePage            },
 ];
 
 PAGE_REGISTRY.forEach(({ id, Component }) => {
