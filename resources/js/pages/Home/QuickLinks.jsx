@@ -1,8 +1,24 @@
-import React from 'react';
-import SACRAMENTS from '@/config/sacraments';
+import React, { useState, useEffect } from 'react';
+import ICON_MAP from '@/config/iconMap';
 import { FaArrowRight } from 'react-icons/fa6';
 
+/**
+ * QuickLinks
+ * Fetches active sacrament types from the DB.
+ * Shows all as cards on the homepage.
+ */
 export default function QuickLinks() {
+    const [sacraments, setSacraments] = useState([]);
+    const [loading,    setLoading]    = useState(true);
+
+    useEffect(() => {
+        fetch('/api/sacrament-types')
+            .then(r => r.json())
+            .then(json => setSacraments(json.data ?? []))
+            .catch(() => setSacraments([]))
+            .finally(() => setLoading(false));
+    }, []);
+
     return (
         <section className="py-5 Quicklinks" aria-labelledby="sacraments-heading">
             <div className="container">
@@ -22,34 +38,53 @@ export default function QuickLinks() {
                     </div>
                 </div>
 
-                <div className="row g-3 justify-content-center">
-                    {SACRAMENTS.map(({ id, Icon, label, color, bg, href, desc }) => (
-                        <div key={id} className="col-6 col-sm-4 col-md-3 col-lg-2">
-                            <a href={href} className="text-decoration-none d-block h-100" aria-label={`${label} — ${desc}`}>
-                                <div className="card bethel-card bethel-quick-link border-0 shadow-sm h-100 text-center py-4 px-2">
-
-                                    {/*─────────────────────────────────────────────────
-                                        TO SWAP ALL ICONS: edit config/sacraments.js only.
-                                        TO USE YOUR OWN PNG/SVG for a specific sacrament:
-                                        Add imgSrc: '/images/icons/baptism.png' to
-                                        entry in sacraments.js, then here use:
-                                        <img src={imgSrc} alt={label} width={28} height={28} />
-                                    ──────────────────────────────────────────────────── */}
-                                    <div
-                                        className="bethel-quick-link__icon mx-auto mb-3"
-                                        style={{ background: bg, color }}
-                                    >
-                                        <Icon size={26} aria-hidden="true" />
-                                    </div>
-
-                                    <p className="mb-0 fw-semibold text-dark" style={{ fontSize: '0.82rem' }}>
-                                        {label}
-                                    </p>
+                {/* Loading skeleton */}
+                {loading && (
+                    <div className="row g-3 justify-content-center">
+                        {[...Array(6)].map((_, i) => (
+                            <div key={i} className="col-6 col-sm-4 col-md-3 col-lg-2">
+                                <div className="card bethel-card border-0 shadow-sm h-100 text-center py-4 px-2"
+                                     style={{ opacity: 0.45 }}>
+                                    <div className="bethel-quick-link__icon mx-auto mb-3"
+                                         style={{ background: '#e5e7eb' }} />
+                                    <div style={{ height: 12, background: '#e5e7eb', borderRadius: 4, width: '70%', margin: '0 auto' }} />
                                 </div>
-                            </a>
-                        </div>
-                    ))}
-                </div>
+                            </div>
+                        ))}
+                    </div>
+                )}
+
+                {/* Cards */}
+                {!loading && sacraments.length > 0 && (
+                    <div className="row g-3 justify-content-center">
+                        {sacraments.map(({ id, icon, icon_color, icon_bg, name, description, href }) => {
+                            const Icon = ICON_MAP[icon]?.Icon ?? ICON_MAP['hands'].Icon;
+                            return (
+                                <div key={id} className="col-6 col-sm-4 col-md-3 col-lg-2">
+                                    <a href={href} className="text-decoration-none d-block h-100"
+                                       aria-label={`${name}${description ? ' — ' + description : ''}`}>
+                                        <div className="card bethel-card bethel-quick-link border-0 shadow-sm h-100 text-center py-4 px-2">
+                                            <div className="bethel-quick-link__icon mx-auto mb-3"
+                                                 style={{ background: icon_bg, color: icon_color }}>
+                                                <Icon size={26} aria-hidden="true" />
+                                            </div>
+                                            <p className="mb-0 fw-semibold text-dark" style={{ fontSize: '0.82rem' }}>
+                                                {name}
+                                            </p>
+                                        </div>
+                                    </a>
+                                </div>
+                            );
+                        })}
+                    </div>
+                )}
+
+                {/* Empty state */}
+                {!loading && sacraments.length === 0 && (
+                    <div className="text-center py-4 text-muted" style={{ fontSize: '0.875rem' }}>
+                        No sacraments available at this time.
+                    </div>
+                )}
 
                 <div className="text-center mt-4">
                     <a href="/sacraments"

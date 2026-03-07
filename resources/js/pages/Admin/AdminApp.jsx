@@ -7,6 +7,7 @@ import UserManagement     from './UserManagement/UserManagement';
 import AnnouncementManagement from '../Announcements/AnnouncementManagement';
 import EventManagement    from '../Events/EventManagement';
 import SacramentRequests  from './SacramentRequests';
+import SacramentTypes     from './SacramentTypes/SacramentTypes';
 
 // Page router — add new admin pages here
 const PAGE_MAP = {
@@ -17,6 +18,7 @@ const PAGE_MAP = {
     '/admin/events':               EventManagement,
     '/admin/events/create':        EventManagement,
     '/admin/sacraments':           SacramentRequests,
+    '/admin/sacrament-types':      SacramentTypes,
 };
 
 export default function AdminApp({ stats: initialStats, admin, parishes, notifications, clergy }) {

@@ -2,7 +2,7 @@ import React from 'react';
 import {
     FaGauge, FaUsers, FaHandsPraying, FaCalendarDays,
     FaBullhorn, FaShield, FaChurch, FaChevronLeft,
-    FaChevronRight, FaUserGear,
+    FaChevronRight, FaUserGear, FaWandMagicSparkles,
 } from 'react-icons/fa6';
 
 const NAV_SECTIONS = [
@@ -35,6 +35,14 @@ const NAV_SECTIONS = [
                 label: 'Parishioners',
                 icon:  FaUsers,
                 href:  '/admin/parishioners',
+                badge: null,
+                roles: ['super_admin'],
+            },
+            {
+                id:    'sacrament-types',
+                label: 'Manage Sacraments',
+                icon:  FaWandMagicSparkles,
+                href:  '/admin/sacrament-types',
                 badge: null,
                 roles: ['super_admin'],
             },

@@ -2,52 +2,61 @@
 
 namespace App\Models;
 
-use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 
 class SacramentRequest extends Model
 {
     use HasFactory;
 
-    /**
-     * The attributes that are mass assignable.
-     *
-     * @var array<int, string>
-     */
     protected $fillable = [
-        'user_id',
-        'parish_id', 
-        'sacrament_type',
-        'preferred_date',
-        'details',
-        'status',
-        'admin_notes',
+        'user_id', 'parish_id', 'sacrament_type_id', 'sacrament_type',
+        'preferred_date', 'preferred_time', 'participants',
+        'details', 'status', 'admin_notes',
+        'assigned_clergy_id', 'clergy_status', 'payment_status',
     ];
 
-    /**
-     * The attributes that should be cast.
-     *
-     * @var array<string, string>
-     */
     protected $casts = [
-        'preferred_date' => 'datetime',
-        'details' => 'array',
+        'preferred_date' => 'date',
+        'details'        => 'array',
+        'participants'   => 'integer',
     ];
 
-    /**
-     * Get the user that owns the request.
-     */
     public function user(): BelongsTo
     {
         return $this->belongsTo(User::class);
     }
 
-    /**
-     * Get the parish that this request belongs to.
-     */
     public function parish(): BelongsTo
     {
         return $this->belongsTo(Parish::class);
+    }
+
+    public function sacramentType(): BelongsTo
+    {
+        return $this->belongsTo(SacramentType::class);
+    }
+
+    public function assignedClergy(): BelongsTo
+    {
+        return $this->belongsTo(Clergy::class, 'assigned_clergy_id');
+    }
+
+    public function payments(): HasMany
+    {
+        return $this->hasMany(RequestPayment::class);
+    }
+
+    public function latestPayment(): HasOne
+    {
+        return $this->hasOne(RequestPayment::class)->latestOfMany();
+    }
+
+    public function messages(): HasMany
+    {
+        return $this->hasMany(RequestMessage::class)->orderBy('created_at');
     }
 }

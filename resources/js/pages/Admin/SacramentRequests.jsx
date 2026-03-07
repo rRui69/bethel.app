@@ -1,325 +1,580 @@
-import React, { useState, useEffect, useMemo } from 'react';
-import { FaCheck, FaXmark, FaMagnifyingGlass, FaHandsPraying, FaX } from 'react-icons/fa6';
+import React, { useState, useEffect, useMemo, useRef, useCallback } from 'react';
+import {
+    FaCheck, FaXmark, FaMagnifyingGlass, FaX, FaPersonPraying,
+    FaCreditCard, FaComment, FaPaperPlane, FaSpinner, FaChevronDown,
+} from 'react-icons/fa6';
 
-// ── Helpers ───────────────────────────────────────────────────
-
+// ── Status Badge ───────────────────────────────────────────────
 function StatusBadge({ status }) {
+    return <span className={`sr-status-badge sr-status-badge--${status}`}>{status}</span>;
+}
+function PaymentBadge({ status }) {
+    const cfg = {
+        unpaid:    { bg: '#f1f5f9', color: '#64748b', label: 'Unpaid'    },
+        submitted: { bg: '#fef9c3', color: '#92400e', label: 'Submitted' },
+        verified:  { bg: '#d1fae5', color: '#065f46', label: 'Verified'  },
+        rejected:  { bg: '#fee2e2', color: '#991b1b', label: 'Rejected'  },
+    };
+    const c = cfg[status] ?? cfg['unpaid'];
     return (
-        <span className={`sr-status-badge sr-status-badge--${status}`}>
-            {status}
+        <span style={{ fontSize: '0.72rem', fontWeight: 600, padding: '2px 8px', borderRadius: 20, background: c.bg, color: c.color }}>
+            {c.label}
         </span>
     );
 }
-
-// Converts a snake_case or camelCase key to a readable label
-// e.g. "child_name" → "Child Name", "godparents" → "Godparents"
+function ClergyBadge({ status }) {
+    const cfg = {
+        unassigned: { color: '#9ca3af', label: 'No Clergy' },
+        pending:    { color: '#f59e0b', label: 'Awaiting'  },
+        confirmed:  { color: '#10b981', label: 'Confirmed' },
+        declined:   { color: '#ef4444', label: 'Declined'  },
+    };
+    const c = cfg[status] ?? cfg['unassigned'];
+    return <span style={{ fontSize: '0.72rem', fontWeight: 600, color: c.color }}>{c.label}</span>;
+}
 function humanize(key) {
-    return key
-        .replace(/_/g, ' ')
-        .replace(/([a-z])([A-Z])/g, '$1 $2')
-        .replace(/\b\w/g, c => c.toUpperCase());
+    return key.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
+}
+
+// ── Assign Clergy Panel (inside modal) ────────────────────────
+function AssignClergyPanel({ requestId, current, onAssigned }) {
+    const [clergy,    setClergy]    = useState([]);
+    const [selected,  setSelected]  = useState(current?.id ?? '');
+    const [saving,    setSaving]    = useState(false);
+    const [loaded,    setLoaded]    = useState(false);
+
+    useEffect(() => {
+        if (loaded) return;
+        setLoaded(true);
+        axios.get(`/admin/api/sacrament-requests/${requestId}/available-clergy`)
+            .then(r => setClergy(r.data))
+            .catch(() => {});
+    }, []);
+
+    const assign = async () => {
+        if (!selected) return;
+        setSaving(true);
+        try {
+            const r = await axios.post(`/admin/api/sacrament-requests/${requestId}/assign-clergy`, { clergy_id: selected });
+            onAssigned(r.data);
+        } catch { alert('Failed to assign clergy.'); }
+        finally { setSaving(false); }
+    };
+
+    return (
+        <div style={{ marginTop: '0.5rem' }}>
+            <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
+                <select
+                    value={selected}
+                    onChange={e => setSelected(e.target.value)}
+                    className="um-input"
+                    style={{ flex: 1, minWidth: 200, fontSize: '0.82rem', padding: '0.4rem 0.6rem' }}
+                >
+                    <option value="">— Select clergy —</option>
+                    {clergy.map(c => (
+                        <option key={c.id} value={c.id}>
+                            {c.name} ({c.parish})
+                        </option>
+                    ))}
+                </select>
+                <button
+                    className="um-btn um-btn--primary"
+                    onClick={assign}
+                    disabled={saving || !selected}
+                    style={{ padding: '0.4rem 0.9rem', fontSize: '0.82rem' }}
+                >
+                    {saving ? <FaSpinner size={11} /> : 'Assign'}
+                </button>
+            </div>
+        </div>
+    );
+}
+
+// ── Message Panel (inside modal) ──────────────────────────────
+function MessagePanel({ requestId }) {
+    const [messages, setMessages] = useState([]);
+    const [body,     setBody]     = useState('');
+    const [sending,  setSending]  = useState(false);
+    const [loading,  setLoading]  = useState(true);
+    const bottomRef               = useRef(null);
+    const authId = window.__PAGE_DATA__?.authId ?? null;
+
+    const load = useCallback(async () => {
+        try {
+            const r = await axios.get(`/admin/api/sacrament-requests/${requestId}/messages`);
+            setMessages(r.data);
+        } catch {}
+        finally { setLoading(false); }
+    }, [requestId]);
+
+    useEffect(() => { load(); }, [load]);
+    useEffect(() => { bottomRef.current?.scrollIntoView({ behavior: 'smooth' }); }, [messages]);
+
+    const send = async () => {
+        if (!body.trim()) return;
+        setSending(true);
+        try {
+            const r = await axios.post(`/admin/api/sacrament-requests/${requestId}/messages`, { body: body.trim() });
+            setMessages(prev => [...prev, r.data]);
+            setBody('');
+        } catch { alert('Failed to send.'); }
+        finally { setSending(false); }
+    };
+
+    const isMine = m => m.role !== 'parishioner';
+
+    return (
+        <div>
+            <div style={{
+                height: 260, overflowY: 'auto', padding: '0.5rem 0',
+                display: 'flex', flexDirection: 'column', gap: 8,
+            }}>
+                {loading ? (
+                    <p style={{ textAlign: 'center', color: '#999', fontSize: '0.8rem', marginTop: '1rem' }}>Loading…</p>
+                ) : messages.length === 0 ? (
+                    <p style={{ textAlign: 'center', color: '#bbb', fontSize: '0.8rem', marginTop: '1.5rem' }}>
+                        No messages yet.
+                    </p>
+                ) : (
+                    messages.map(m => (
+                        <div key={m.id} style={{ display: 'flex', flexDirection: 'column', alignItems: isMine(m) ? 'flex-end' : 'flex-start' }}>
+                            <span style={{ fontSize: '0.68rem', color: '#bbb', marginBottom: 2 }}>
+                                {isMine(m) ? 'You' : m.sender} · {m.time}
+                            </span>
+                            <div style={{
+                                maxWidth: '78%', padding: '0.45rem 0.8rem',
+                                borderRadius: isMine(m) ? '12px 12px 3px 12px' : '12px 12px 12px 3px',
+                                background: isMine(m) ? 'var(--admin-accent,#2563eb)' : 'var(--bg-hover,#f1f5f9)',
+                                color: isMine(m) ? '#fff' : 'var(--text-primary,#111)',
+                                fontSize: '0.82rem', lineHeight: 1.5,
+                            }}>
+                                {m.body}
+                            </div>
+                        </div>
+                    ))
+                )}
+                <div ref={bottomRef} />
+            </div>
+            <div style={{ display: 'flex', gap: 8, marginTop: 6 }}>
+                <textarea
+                    rows={2}
+                    value={body}
+                    onChange={e => setBody(e.target.value)}
+                    onKeyDown={e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); send(); } }}
+                    placeholder="Reply to parishioner…"
+                    className="um-input"
+                    style={{ flex: 1, resize: 'none', fontSize: '0.82rem', padding: '0.45rem 0.7rem', fontFamily: 'inherit' }}
+                />
+                <button
+                    className="um-btn um-btn--primary"
+                    onClick={send}
+                    disabled={sending || !body.trim()}
+                    style={{ padding: '0.4rem 0.8rem', display: 'flex', alignItems: 'center', gap: 5 }}
+                >
+                    {sending ? <FaSpinner size={11} /> : <FaPaperPlane size={11} />}
+                </button>
+            </div>
+        </div>
+    );
+}
+
+// ── Payment Verification Panel ────────────────────────────────
+function PaymentVerifyPanel({ requestId, payment, onVerified }) {
+    const [saving,  setSaving]  = useState(false);
+    const [notes,   setNotes]   = useState('');
+
+    if (!payment || payment.status === 'verified') return null;
+
+    const verify = async (status) => {
+        setSaving(true);
+        try {
+            await axios.post(`/admin/api/sacrament-requests/${requestId}/verify-payment`, {
+                status, admin_notes: notes || null,
+            });
+            onVerified(status);
+        } catch { alert('Failed to update payment.'); }
+        finally { setSaving(false); }
+    };
+
+    return (
+        <div>
+            {payment.proof_url && (
+                <div style={{ marginBottom: '0.75rem' }}>
+                    <a href={payment.proof_url} target="_blank" rel="noreferrer">
+                        <img src={payment.proof_url} alt="Proof"
+                            style={{ maxHeight: 140, borderRadius: 8, border: '1px solid var(--border-color)', objectFit: 'contain' }} />
+                    </a>
+                    <p style={{ fontSize: '0.75rem', color: '#9ca3af', margin: '4px 0 0' }}>
+                        {payment.method?.toUpperCase()} · {payment.amount ? `₱${payment.amount}` : 'Amount not specified'} · Submitted {payment.submitted}
+                    </p>
+                </div>
+            )}
+            <textarea
+                className="um-input"
+                rows={2}
+                placeholder="Optional note to parishioner…"
+                value={notes}
+                onChange={e => setNotes(e.target.value)}
+                style={{ width: '100%', resize: 'none', fontSize: '0.82rem', marginBottom: '0.5rem', fontFamily: 'inherit' }}
+            />
+            <div style={{ display: 'flex', gap: 8 }}>
+                <button className="um-btn um-btn--danger"   onClick={() => verify('rejected')} disabled={saving} style={{ fontSize: '0.8rem', padding: '0.4rem 0.9rem' }}>
+                    <FaXmark size={11} /> Reject
+                </button>
+                <button className="um-btn um-btn--success"  onClick={() => verify('verified')} disabled={saving} style={{ fontSize: '0.8rem', padding: '0.4rem 0.9rem' }}>
+                    <FaCheck size={11} /> Verify
+                </button>
+            </div>
+        </div>
+    );
 }
 
 // ── Detail Modal ──────────────────────────────────────────────
-
 function SacramentRequestDetailModal({ requestId, onClose, onStatusChange }) {
-    const [data, setData]       = useState(null);
-    const [loading, setLoading] = useState(true);
-    const [saving, setSaving]   = useState(false);
-    const [notes, setNotes]     = useState('');
-    const [notesEdited, setNotesEdited] = useState(false);
+    const [data,       setData]       = useState(null);
+    const [loading,    setLoading]    = useState(true);
+    const [saving,     setSaving]     = useState(false);
+    const [notes,      setNotes]      = useState('');
+    const [notesEdited,setNotesEdited]= useState(false);
+    const [activeTab,  setActiveTab]  = useState('details'); // details | clergy | payment | messages
 
-    useEffect(() => {
-        axios.get(`/admin/api/sacrament-requests/${requestId}`)
-            .then(r => {
-                setData(r.data);
-                setNotes(r.data.admin_notes ?? '');
-            })
-            .catch(() => {})
-            .finally(() => setLoading(false));
+    const load = useCallback(async () => {
+        try {
+            const r = await axios.get(`/admin/api/sacrament-requests/${requestId}`);
+            setData(r.data);
+            setNotes(r.data.admin_notes ?? '');
+        } catch {}
+        finally { setLoading(false); }
     }, [requestId]);
+
+    useEffect(() => { load(); }, [load]);
 
     const handleStatusChange = async (newStatus) => {
         if (!confirm(`Mark this request as ${newStatus}?`)) return;
         setSaving(true);
         try {
-            await axios.patch(`/admin/api/sacrament-requests/${requestId}`, {
-                status:      newStatus,
-                admin_notes: notes,
-            });
+            await axios.patch(`/admin/api/sacrament-requests/${requestId}`, { status: newStatus, admin_notes: notes });
             setData(prev => ({ ...prev, status: newStatus, admin_notes: notes }));
             setNotesEdited(false);
             if (onStatusChange) onStatusChange(requestId, newStatus);
-        } catch (e) {
-            alert('Failed to update status.');
-        } finally {
-            setSaving(false);
-        }
+        } catch { alert('Failed to update status.'); }
+        finally { setSaving(false); }
     };
 
     const saveNotes = async () => {
         setSaving(true);
         try {
-            await axios.patch(`/admin/api/sacrament-requests/${requestId}`, {
-                status:      data.status,
-                admin_notes: notes,
-            });
+            await axios.patch(`/admin/api/sacrament-requests/${requestId}`, { status: data.status, admin_notes: notes });
             setData(prev => ({ ...prev, admin_notes: notes }));
             setNotesEdited(false);
-        } catch (e) {
-            alert('Failed to save notes.');
-        } finally {
-            setSaving(false);
-        }
+        } catch { alert('Failed to save notes.'); }
+        finally { setSaving(false); }
     };
 
-    // Extract initials from requester name for the avatar
-    const initials = data?.requester?.name
-        ? data.requester.name.split(' ').map(n => n[0]).join('').slice(0, 2).toUpperCase()
-        : '?';
+    const TABS = [
+        { id: 'details',  label: 'Details'  },
+        { id: 'clergy',   label: 'Clergy'   },
+        { id: 'payment',  label: 'Payment'  },
+        { id: 'messages', label: 'Messages' },
+    ];
 
     return (
         <div className="um-overlay" onClick={onClose}>
-            <div className="um-modal um-modal--wide" onClick={e => e.stopPropagation()}>
+            <div className="um-modal um-modal--wide" style={{ maxWidth: 620 }} onClick={e => e.stopPropagation()}>
 
                 {/* Header */}
                 <div className="um-modal__header">
-                    {loading ? (
-                        <p className="um-modal__title">Loading…</p>
-                    ) : (
+                    {loading ? <p className="um-modal__title">Loading…</p> : (
                         <div className="um-modal__header-info">
                             <div className="um-avatar um-avatar--lg" style={{ background: 'rgba(200,151,58,0.15)', color: '#c8973a' }}>
-                                <FaHandsPraying size={20} />
+                                <FaPersonPraying size={20} />
                             </div>
                             <div>
                                 <h2 className="um-modal__title">{data?.sacrament_type} Request</h2>
-                                <p className="um-modal__sub">
-                                    {data?.requester?.name} · Submitted {data?.submitted_at}
-                                </p>
+                                <p className="um-modal__sub">{data?.requester?.name} · {data?.submitted_at}</p>
                             </div>
                         </div>
                     )}
-                    <button className="um-modal__close" onClick={onClose}>
-                        <FaX size={12} />
-                    </button>
+                    <button className="um-modal__close" onClick={onClose}><FaX size={12} /></button>
                 </div>
+
+                {/* Tabs */}
+                {!loading && (
+                    <div style={{ display: 'flex', borderBottom: '1px solid var(--border-color)', paddingLeft: '1.25rem' }}>
+                        {TABS.map(t => (
+                            <button
+                                key={t.id}
+                                onClick={() => setActiveTab(t.id)}
+                                style={{
+                                    padding: '0.6rem 1rem', fontSize: '0.82rem', fontWeight: 600,
+                                    background: 'none', border: 'none', cursor: 'pointer',
+                                    color: activeTab === t.id ? 'var(--admin-accent,#2563eb)' : 'var(--text-muted)',
+                                    borderBottom: activeTab === t.id ? '2px solid var(--admin-accent,#2563eb)' : '2px solid transparent',
+                                    marginBottom: -1,
+                                }}
+                            >
+                                {t.label}
+                            </button>
+                        ))}
+                    </div>
+                )}
 
                 {/* Body */}
                 <div className="um-modal__body um-modal__body--scroll-tall">
-                    {loading ? (
-                        <div className="um-modal-loading">Loading…</div>
-                    ) : data ? (
+                    {loading ? <div className="um-modal-loading">Loading…</div> : !data ? (
+                        <div className="um-modal-loading">Request not found.</div>
+                    ) : (
                         <>
-                            {/* Status + Parish row */}
-                            <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginBottom: '1.25rem', flexWrap: 'wrap' }}>
-                                <StatusBadge status={data.status} />
-                                <span style={{ fontSize: '0.78rem', color: 'var(--text-muted)' }}>
-                                    {data.parish?.name}{data.parish?.city ? ` — ${data.parish.city}` : ''}
-                                </span>
-                            </div>
-
-                            {/* Request Info */}
-                            <div className="um-section-label" style={{ marginBottom: '0.5rem' }}>Request Details</div>
-                            <div className="um-detail-grid">
-                                {[
-                                    ['Sacrament Type',  data.sacrament_type],
-                                    ['Preferred Date',  data.preferred_date],
-                                    ['Parish',          data.parish?.name ?? '—'],
-                                    ['Parish City',     data.parish?.city ?? '—'],
-                                ].map(([label, val]) => (
-                                    <div key={label} className="um-detail-row">
-                                        <span className="um-detail-label">{label}</span>
-                                        <span className="um-detail-value">{val}</span>
-                                    </div>
-                                ))}
-                            </div>
-
-                            {/* Requester Info */}
-                            <div className="um-section-label" style={{ margin: '1.25rem 0 0.5rem' }}>Parishioner</div>
-                            <div className="um-detail-grid">
-                                {[
-                                    ['Name',     data.requester?.name ?? '—'],
-                                    ['Email',    data.requester?.email ?? '—'],
-                                    ['Phone',    data.requester?.phone ?? '—'],
-                                    ['City',     data.requester?.city ?? '—'],
-                                    ['Barangay', data.requester?.barangay ?? '—'],
-                                ].map(([label, val]) => (
-                                    <div key={label} className="um-detail-row">
-                                        <span className="um-detail-label">{label}</span>
-                                        <span className="um-detail-value">{val}</span>
-                                    </div>
-                                ))}
-                            </div>
-
-                            {/* Dynamic Details (from the details JSON column) */}
-                            {data.details && Object.keys(data.details).length > 0 && (
+                            {/* ── DETAILS TAB ── */}
+                            {activeTab === 'details' && (
                                 <>
-                                    <div className="um-section-label" style={{ margin: '1.25rem 0 0.5rem' }}>
-                                        Submitted Information
+                                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginBottom: '1.25rem', flexWrap: 'wrap' }}>
+                                        <StatusBadge status={data.status} />
+                                        <PaymentBadge status={data.payment_status} />
+                                        <ClergyBadge status={data.clergy_status} />
+                                        <span style={{ fontSize: '0.78rem', color: 'var(--text-muted)' }}>
+                                            {data.parish?.name}{data.parish?.city ? ` — ${data.parish.city}` : ''}
+                                        </span>
                                     </div>
+
+                                    <div className="um-section-label" style={{ marginBottom: '0.5rem' }}>Request Details</div>
                                     <div className="um-detail-grid">
-                                        {Object.entries(data.details).map(([key, val]) => (
-                                            <div key={key} className="um-detail-row">
-                                                <span className="um-detail-label">{humanize(key)}</span>
-                                                <span className="um-detail-value">{val || '—'}</span>
+                                        {[
+                                            ['Sacrament Type', data.sacrament_type],
+                                            ['Preferred Date', data.preferred_date],
+                                            ['Preferred Time', data.preferred_time],
+                                            ['Participants',   data.participants],
+                                            ['Parish',         data.parish?.name ?? '—'],
+                                            ['Parish City',    data.parish?.city ?? '—'],
+                                        ].map(([label, val]) => (
+                                            <div key={label} className="um-detail-row">
+                                                <span className="um-detail-label">{label}</span>
+                                                <span className="um-detail-value">{val}</span>
                                             </div>
                                         ))}
                                     </div>
+
+                                    <div className="um-section-label" style={{ margin: '1.25rem 0 0.5rem' }}>Parishioner</div>
+                                    <div className="um-detail-grid">
+                                        {[
+                                            ['Name',     data.requester?.name  ?? '—'],
+                                            ['Email',    data.requester?.email ?? '—'],
+                                            ['Phone',    data.requester?.phone ?? '—'],
+                                            ['City',     data.requester?.city  ?? '—'],
+                                            ['Barangay', data.requester?.barangay ?? '—'],
+                                        ].map(([label, val]) => (
+                                            <div key={label} className="um-detail-row">
+                                                <span className="um-detail-label">{label}</span>
+                                                <span className="um-detail-value">{val}</span>
+                                            </div>
+                                        ))}
+                                    </div>
+
+                                    {data.details && Object.keys(data.details).length > 0 && (
+                                        <>
+                                            <div className="um-section-label" style={{ margin: '1.25rem 0 0.5rem' }}>Submitted Information</div>
+                                            <div className="um-detail-grid">
+                                                {Object.entries(data.details).map(([key, val]) => (
+                                                    <div key={key} className="um-detail-row">
+                                                        <span className="um-detail-label">{humanize(key)}</span>
+                                                        <span className="um-detail-value">{Array.isArray(val) ? val.join(', ') : (val || '—')}</span>
+                                                    </div>
+                                                ))}
+                                            </div>
+                                        </>
+                                    )}
+
+                                    <div className="um-section-label" style={{ margin: '1.25rem 0 0.5rem' }}>Admin Notes</div>
+                                    <textarea
+                                        className="um-input"
+                                        rows={3}
+                                        style={{ width: '100%', resize: 'vertical', fontFamily: 'inherit', fontSize: '0.85rem' }}
+                                        placeholder="Add internal notes…"
+                                        value={notes}
+                                        onChange={e => { setNotes(e.target.value); setNotesEdited(true); }}
+                                    />
                                 </>
                             )}
 
-                            {/* Admin Notes */}
-                            <div className="um-section-label" style={{ margin: '1.25rem 0 0.5rem' }}>Admin Notes</div>
-                            <textarea
-                                className="um-input"
-                                rows={3}
-                                style={{ width: '100%', resize: 'vertical', fontFamily: 'inherit', fontSize: '0.85rem' }}
-                                placeholder="Add internal notes for this request (optional)…"
-                                value={notes}
-                                onChange={e => { setNotes(e.target.value); setNotesEdited(true); }}
-                            />
+                            {/* ── CLERGY TAB ── */}
+                            {activeTab === 'clergy' && (
+                                <div>
+                                    <div className="um-section-label" style={{ marginBottom: '0.5rem' }}>Current Assignment</div>
+                                    {data.assigned_clergy ? (
+                                        <div className="um-detail-row" style={{ marginBottom: '1rem' }}>
+                                            <span className="um-detail-label">Assigned To</span>
+                                            <span className="um-detail-value">{data.assigned_clergy.name}</span>
+                                        </div>
+                                    ) : (
+                                        <p style={{ fontSize: '0.82rem', color: '#9ca3af', marginBottom: '1rem' }}>No clergy assigned yet.</p>
+                                    )}
+                                    <div className="um-detail-row" style={{ marginBottom: '1.25rem' }}>
+                                        <span className="um-detail-label">Clergy Status</span>
+                                        <ClergyBadge status={data.clergy_status} />
+                                    </div>
+
+                                    <div className="um-section-label" style={{ marginBottom: '0.5rem' }}>
+                                        {data.assigned_clergy ? 'Reassign Clergy' : 'Assign Clergy'}
+                                    </div>
+                                    <AssignClergyPanel
+                                        requestId={requestId}
+                                        current={data.assigned_clergy}
+                                        onAssigned={res => {
+                                            setData(prev => ({
+                                                ...prev,
+                                                assigned_clergy: res.assigned_clergy,
+                                                clergy_status: res.clergy_status,
+                                            }));
+                                            if (onStatusChange) onStatusChange(requestId, data.status);
+                                        }}
+                                    />
+                                </div>
+                            )}
+
+                            {/* ── PAYMENT TAB ── */}
+                            {activeTab === 'payment' && (
+                                <div>
+                                    <div className="um-section-label" style={{ marginBottom: '0.5rem' }}>Payment Status</div>
+                                    <div style={{ marginBottom: '1rem' }}>
+                                        <PaymentBadge status={data.payment_status} />
+                                    </div>
+
+                                    {data.payment ? (
+                                        <>
+                                            <div className="um-section-label" style={{ marginBottom: '0.5rem' }}>Proof of Payment</div>
+                                            <PaymentVerifyPanel
+                                                requestId={requestId}
+                                                payment={data.payment}
+                                                onVerified={status => {
+                                                    setData(prev => ({
+                                                        ...prev,
+                                                        payment_status: status,
+                                                        payment: { ...prev.payment, status },
+                                                    }));
+                                                    if (onStatusChange) onStatusChange(requestId, data.status);
+                                                }}
+                                            />
+                                        </>
+                                    ) : (
+                                        <p style={{ fontSize: '0.82rem', color: '#9ca3af' }}>No payment submitted yet.</p>
+                                    )}
+                                </div>
+                            )}
+
+                            {/* ── MESSAGES TAB ── */}
+                            {activeTab === 'messages' && (
+                                <div>
+                                    <div className="um-section-label" style={{ marginBottom: '0.75rem' }}>
+                                        Conversation with Parishioner
+                                    </div>
+                                    <MessagePanel requestId={requestId} />
+                                </div>
+                            )}
                         </>
-                    ) : (
-                        <div className="um-modal-loading">Request not found.</div>
                     )}
                 </div>
 
                 {/* Footer */}
                 <div className="um-modal__footer">
-                    <button className="um-btn um-btn--outline" onClick={onClose} disabled={saving}>
-                        Close
-                    </button>
-
-                    {data && notesEdited && (
+                    <button className="um-btn um-btn--outline" onClick={onClose} disabled={saving}>Close</button>
+                    {data && notesEdited && activeTab === 'details' && (
                         <button className="um-btn um-btn--outline" onClick={saveNotes} disabled={saving}>
                             {saving ? 'Saving…' : 'Save Notes'}
                         </button>
                     )}
-
-                    {data?.status === 'pending' && (
+                    {data?.status === 'pending' && activeTab === 'details' && (
                         <>
-                            <button
-                                className="um-btn um-btn--danger"
-                                onClick={() => handleStatusChange('rejected')}
-                                disabled={saving}
-                            >
+                            <button className="um-btn um-btn--danger"  onClick={() => handleStatusChange('rejected')} disabled={saving}>
                                 <FaXmark size={11} /> Reject
                             </button>
-                            <button
-                                className="um-btn um-btn--success"
-                                onClick={() => handleStatusChange('approved')}
-                                disabled={saving}
-                            >
+                            <button className="um-btn um-btn--success" onClick={() => handleStatusChange('approved')} disabled={saving}>
                                 <FaCheck size={11} /> Approve
                             </button>
                         </>
                     )}
                 </div>
-
             </div>
         </div>
     );
 }
 
 // ── Main Page ─────────────────────────────────────────────────
-
 export default function SacramentRequests({ onStatsRefresh }) {
-    const [requests, setRequests]           = useState([]);
-    const [loading, setLoading]             = useState(true);
-    const [search, setSearch]               = useState('');
-    const [statusFilter, setStatusFilter]   = useState('all');
-    const [detailRequestId, setDetailRequestId] = useState(null);
+    const [requests,      setRequests]      = useState([]);
+    const [loading,       setLoading]       = useState(true);
+    const [search,        setSearch]        = useState('');
+    const [statusFilter,  setStatusFilter]  = useState('all');
+    const [typeFilter,    setTypeFilter]    = useState('all');
+    const [types,         setTypes]         = useState([]);
+    const [detailId,      setDetailId]      = useState(null);
 
     useEffect(() => {
+        // Load available type names for the filter dropdown
+        axios.get('/admin/api/sacrament-types').then(r => {
+            const data = r.data?.data ?? r.data;
+            setTypes(Array.isArray(data) ? data.map(t => t.name) : []);
+        }).catch(() => {});
+
         fetchRequests();
     }, []);
 
     const fetchRequests = async () => {
         try {
             const response = await axios.get('/admin/api/sacrament-requests');
-            const data = response.data.data ?? response.data;
+            const data     = response.data.data ?? response.data;
             setRequests(Array.isArray(data) ? data : []);
-        } catch (error) {
-            console.error('Error fetching sacrament requests:', error);
-        } finally {
-            setLoading(false);
-        }
+        } catch (e) { console.error(e); }
+        finally { setLoading(false); }
     };
 
-    // Called by both the table action buttons AND the modal's approve/reject buttons
     const handleStatusChange = async (id, newStatus, fromModal = false) => {
         if (!fromModal && !confirm(`Mark this request as ${newStatus}?`)) return;
-
         try {
             if (!fromModal) {
                 await axios.patch(`/admin/api/sacrament-requests/${id}`, { status: newStatus });
             }
-            // Update row in local state so table reflects the change immediately
-            setRequests(prev =>
-                prev.map(req => req.id === id ? { ...req, status: newStatus } : req)
-            );
+            setRequests(prev => prev.map(req => req.id === id ? { ...req, status: newStatus } : req));
             if (onStatsRefresh) onStatsRefresh();
-        } catch (error) {
-            console.error('Error updating status:', error);
-            alert('Failed to update status. Please try again.');
-        }
-    };
-
-    // Called by the modal after it does its own PATCH — we just sync local state
-    const handleModalStatusChange = (id, newStatus) => {
-        handleStatusChange(id, newStatus, true);
+        } catch { alert('Failed to update status.'); }
     };
 
     const filteredRequests = useMemo(() => {
         return requests.filter(req => {
-            const matchesStatus =
-                statusFilter === 'all' || req.status === statusFilter;
-
-            const haystack = [
-                req.requester_name  ?? '',
-                req.requester_email ?? '',
-                req.sacrament_type  ?? '',
-            ].join(' ').toLowerCase();
-
-            const matchesSearch =
-                search === '' || haystack.includes(search.toLowerCase());
-
-            return matchesStatus && matchesSearch;
+            const matchStatus = statusFilter === 'all' || req.status === statusFilter;
+            const matchType   = typeFilter   === 'all' || req.sacrament_type === typeFilter;
+            const haystack    = [req.requester_name ?? '', req.requester_email ?? '', req.sacrament_type ?? ''].join(' ').toLowerCase();
+            const matchSearch = !search || haystack.includes(search.toLowerCase());
+            return matchStatus && matchType && matchSearch;
         });
-    }, [requests, search, statusFilter]);
+    }, [requests, search, statusFilter, typeFilter]);
 
     return (
         <>
-            {/* Page Header */}
             <div className="admin-page-header">
                 <div>
                     <h1 className="admin-page-header__title">Sacrament Requests</h1>
-                    <p className="admin-page-header__sub">
-                        Review, approve, or reject parishioner sacrament requests.
-                    </p>
+                    <p className="admin-page-header__sub">Review requests, assign clergy, verify payments, and message parishioners.</p>
                 </div>
             </div>
 
-            {/* Table Card */}
             <div className="admin-table-card">
-
                 {/* Toolbar */}
-                <div className="um-toolbar">
+                <div className="um-toolbar" style={{ flexWrap: 'wrap', gap: '0.5rem' }}>
                     <div className="um-search-wrap">
                         <FaMagnifyingGlass size={12} className="um-search-icon" />
                         <input
-                            type="text"
-                            className="um-search-input"
+                            type="text" className="um-search-input"
                             placeholder="Search by name, email, or type..."
-                            value={search}
-                            onChange={e => setSearch(e.target.value)}
+                            value={search} onChange={e => setSearch(e.target.value)}
                         />
                     </div>
-                    <select
-                        className="um-filter-select"
-                        value={statusFilter}
-                        onChange={e => setStatusFilter(e.target.value)}
-                    >
+                    {/* Type filter */}
+                    <select className="um-filter-select" value={typeFilter} onChange={e => setTypeFilter(e.target.value)}>
+                        <option value="all">All Types</option>
+                        {types.map(t => <option key={t} value={t}>{t}</option>)}
+                    </select>
+                    {/* Status filter */}
+                    <select className="um-filter-select" value={statusFilter} onChange={e => setStatusFilter(e.target.value)}>
                         <option value="all">All Statuses</option>
                         <option value="pending">Pending</option>
                         <option value="approved">Approved</option>
@@ -327,7 +582,6 @@ export default function SacramentRequests({ onStatsRefresh }) {
                     </select>
                 </div>
 
-                {/* Table */}
                 <div style={{ overflowX: 'auto' }}>
                     <table className="admin-table">
                         <thead>
@@ -335,65 +589,38 @@ export default function SacramentRequests({ onStatsRefresh }) {
                                 <th>#</th>
                                 <th>Parishioner</th>
                                 <th>Type</th>
-                                <th>Preferred Date</th>
+                                <th>Date</th>
                                 <th>Status</th>
-                                <th>Submitted</th>
+                                <th>Clergy</th>
+                                <th>Payment</th>
                                 <th style={{ textAlign: 'right' }}>Actions</th>
                             </tr>
                         </thead>
                         <tbody>
                             {loading ? (
-                                <tr>
-                                    <td colSpan={7} className="um-table-empty">
-                                        Loading requests...
-                                    </td>
-                                </tr>
+                                <tr><td colSpan={8} className="um-table-empty">Loading requests…</td></tr>
                             ) : filteredRequests.length === 0 ? (
-                                <tr>
-                                    <td colSpan={7} className="um-table-empty">
-                                        No requests found.
-                                    </td>
-                                </tr>
+                                <tr><td colSpan={8} className="um-table-empty">No requests found.</td></tr>
                             ) : (
                                 filteredRequests.map((req, i) => (
-                                    <tr
-                                        key={req.id}
-                                        style={{ cursor: 'pointer' }}
-                                        onClick={() => setDetailRequestId(req.id)}
-                                    >
+                                    <tr key={req.id} style={{ cursor: 'pointer' }} onClick={() => setDetailId(req.id)}>
                                         <td className="um-table-num">{i + 1}</td>
                                         <td>
-                                            <div style={{ fontWeight: 600, fontSize: '0.875rem', color: 'var(--text-primary)' }}>
-                                                {req.requester_name ?? 'Unknown'}
-                                            </div>
-                                            <div style={{ fontSize: '0.78rem', color: 'var(--text-muted)' }}>
-                                                {req.requester_email}
-                                            </div>
+                                            <div style={{ fontWeight: 600, fontSize: '0.875rem', color: 'var(--text-primary)' }}>{req.requester_name ?? 'Unknown'}</div>
+                                            <div style={{ fontSize: '0.78rem', color: 'var(--text-muted)' }}>{req.requester_email}</div>
                                         </td>
-                                        <td>{req.sacrament_type}</td>
-                                        <td>{req.preferred_date ?? 'N/A'}</td>
-                                        <td>
-                                            <StatusBadge status={req.status} />
-                                        </td>
-                                        <td>{req.created_at}</td>
-                                        <td
-                                            style={{ textAlign: 'right' }}
-                                            onClick={e => e.stopPropagation()} // prevent row click when using action buttons
-                                        >
+                                        <td style={{ fontSize: '0.85rem' }}>{req.sacrament_type}</td>
+                                        <td style={{ fontSize: '0.82rem' }}>{req.preferred_date ?? 'N/A'}</td>
+                                        <td><StatusBadge status={req.status} /></td>
+                                        <td><ClergyBadge status={req.clergy_status ?? 'unassigned'} /></td>
+                                        <td><PaymentBadge status={req.payment_status ?? 'unpaid'} /></td>
+                                        <td style={{ textAlign: 'right' }} onClick={e => e.stopPropagation()}>
                                             {req.status === 'pending' && (
                                                 <div style={{ display: 'flex', gap: '0.4rem', justifyContent: 'flex-end' }}>
-                                                    <button
-                                                        className="sr-action-btn sr-action-btn--approve"
-                                                        title="Approve"
-                                                        onClick={() => handleStatusChange(req.id, 'approved')}
-                                                    >
+                                                    <button className="sr-action-btn sr-action-btn--approve" title="Approve" onClick={() => handleStatusChange(req.id, 'approved')}>
                                                         <FaCheck size={11} />
                                                     </button>
-                                                    <button
-                                                        className="sr-action-btn sr-action-btn--reject"
-                                                        title="Reject"
-                                                        onClick={() => handleStatusChange(req.id, 'rejected')}
-                                                    >
+                                                    <button className="sr-action-btn sr-action-btn--reject" title="Reject" onClick={() => handleStatusChange(req.id, 'rejected')}>
                                                         <FaXmark size={11} />
                                                     </button>
                                                 </div>
@@ -407,12 +634,14 @@ export default function SacramentRequests({ onStatsRefresh }) {
                 </div>
             </div>
 
-            {/* Detail Modal */}
-            {detailRequestId && (
+            {detailId && (
                 <SacramentRequestDetailModal
-                    requestId={detailRequestId}
-                    onClose={() => setDetailRequestId(null)}
-                    onStatusChange={handleModalStatusChange}
+                    requestId={detailId}
+                    onClose={() => setDetailId(null)}
+                    onStatusChange={(id, status) => {
+                        handleStatusChange(id, status, true);
+                        if (onStatsRefresh) onStatsRefresh();
+                    }}
                 />
             )}
         </>
