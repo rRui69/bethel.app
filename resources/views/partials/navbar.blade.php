@@ -83,6 +83,8 @@
 
             {{-- Auth Section --}}
             <div class="d-flex align-items-center gap-2">
+                {{-- Theme toggle --}}
+                <div id="bethel-theme-toggle"></div>
                 @auth
                     {{-- Logged-in user dropdown --}}
                     <div class="dropdown">
@@ -137,7 +139,10 @@
      style="background: var(--bethel-primary) !important; width: 280px;">
     <div class="offcanvas-header border-bottom" style="border-color: rgba(255,255,255,0.1) !important;">
         <div id="bethel-nav-brand-mobile"></div>
-        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="offcanvas" aria-label="Close"></button>
+        <div class="d-flex align-items-center gap-2">
+            <div id="bethel-theme-toggle-mobile"></div>
+            <button type="button" class="btn-close btn-close-white" data-bs-dismiss="offcanvas" aria-label="Close"></button>
+        </div>
     </div>
     <div class="offcanvas-body px-0">
         <ul class="navbar-nav px-3 gap-1">

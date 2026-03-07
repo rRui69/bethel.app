@@ -10,6 +10,7 @@ import Login                  from './pages/Auth/Login';
 import Register               from './pages/Auth/Register';
 import SacramentsDropdown     from './components/SacramentsDropdown';
 import NavBrand               from './components/NavBrand';
+import ThemeToggle            from './components/ThemeToggle';
 import AnnouncementsPage      from './pages/Announcements/AnnouncementsPage';
 import AnnouncementDetailPage from './pages/Announcements/AnnouncementDetailPage';
 import EventsPage             from './pages/Events/EventsPage';
@@ -24,6 +25,8 @@ const PAGE_REGISTRY = [
     { id: 'bethel-nav-brand',           Component: NavBrand               },
     { id: 'bethel-nav-brand-mobile',    Component: NavBrand               },
     { id: 'bethel-footer-brand',        Component: NavBrand               },
+    { id: 'bethel-theme-toggle',        Component: ThemeToggle            },
+    { id: 'bethel-theme-toggle-mobile',  Component: ThemeToggle            },
     { id: 'bethel-announcements',       Component: AnnouncementsPage      },
     { id: 'bethel-announcement-detail', Component: AnnouncementDetailPage },
     { id: 'bethel-events-page',         Component: EventsPage             },

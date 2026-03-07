@@ -532,7 +532,6 @@ export default function ProfilePage() {
                                                     style={{
                                                         fontSize: '0.82rem',
                                                         color: tab === id ? 'var(--bethel-primary)' : '#6c757d',
-                                                        borderBottom: tab === id ? '2px solid var(--bethel-primary)' : '2px solid transparent',
                                                         background: 'none',
                                                         border: 'none',
                                                         borderBottom: tab === id

@@ -691,3 +691,201 @@ z-index:1;
     height: 1px;
     background: #e5e7eb;
 }
+
+/* ══════════════════════════════════════════════════════════════
+   DARK MODE — PUBLIC SITE
+   Applied via [data-theme="dark"] on <html>
+   Set by ThemeToggle.jsx + persisted in localStorage
+══════════════════════════════════════════════════════════════ */
+
+/* ── Page-level tokens ──────────────────────────────────────── */
+[data-theme="dark"] {
+    --bethel-light-bg:  #111c2a;
+    --bethel-shadow:    0 4px 20px rgba(0,0,0,0.4);
+    --bethel-shadow-md: 0 8px 30px rgba(0,0,0,0.55);
+}
+
+[data-theme="dark"] body {
+    background-color: #0f1923;
+    color: #d1dce8;
+}
+
+/* ── Bootstrap card ─────────────────────────────────────────── */
+[data-theme="dark"] .card {
+    background-color: #1a2535 !important;
+    border-color: rgba(255,255,255,0.07) !important;
+    color: #d1dce8;
+}
+
+[data-theme="dark"] .card-header {
+    background-color: #1a2535 !important;
+    border-color: rgba(255,255,255,0.08) !important;
+}
+
+[data-theme="dark"] .card-body  { background-color: #1a2535; }
+[data-theme="dark"] .card-footer { background-color: #1a2535 !important; border-color: rgba(255,255,255,0.08) !important; }
+
+/* ── Section backgrounds ────────────────────────────────────── */
+[data-theme="dark"] .bg-white,
+[data-theme="dark"] .bg-light  { background-color: #1a2535 !important; }
+
+[data-theme="dark"] section,
+[data-theme="dark"] .bethel-section-title { color: #e2e8f0; }
+
+[data-theme="dark"] .text-muted { color: rgba(209,220,232,0.55) !important; }
+[data-theme="dark"] .text-dark  { color: #d1dce8 !important; }
+
+/* ── Bethel section cards ───────────────────────────────────── */
+[data-theme="dark"] .bethel-card {
+    background-color: #1a2535 !important;
+    border-color: rgba(255,255,255,0.07) !important;
+}
+
+/* ── Schedule pills ─────────────────────────────────────────── */
+[data-theme="dark"] .bethel-schedule-pill {
+    background: rgba(255,255,255,0.07);
+    color: #d1dce8;
+}
+
+/* ── Quick links ────────────────────────────────────────────── */
+[data-theme="dark"] .bethel-quick-link__icon {
+    background: rgba(255,255,255,0.08);
+}
+
+/* ── Dropdowns ──────────────────────────────────────────────── */
+[data-theme="dark"] .dropdown-menu {
+    background-color: #1e2e42 !important;
+    border: 1px solid rgba(255,255,255,0.1) !important;
+}
+
+[data-theme="dark"] .dropdown-item {
+    color: #d1dce8 !important;
+}
+
+[data-theme="dark"] .dropdown-item:hover {
+    background-color: rgba(255,255,255,0.07) !important;
+    color: #fff !important;
+}
+
+[data-theme="dark"] .dropdown-divider {
+    border-color: rgba(255,255,255,0.1) !important;
+}
+
+/* ── Form controls ──────────────────────────────────────────── */
+[data-theme="dark"] .form-control,
+[data-theme="dark"] .form-select {
+    background-color: #1a2535;
+    border-color: rgba(255,255,255,0.15);
+    color: #d1dce8;
+}
+
+[data-theme="dark"] .form-control:focus,
+[data-theme="dark"] .form-select:focus {
+    background-color: #1e2e42;
+    border-color: var(--bethel-secondary);
+    color: #fff;
+    box-shadow: 0 0 0 3px rgba(200,151,58,0.2);
+}
+
+[data-theme="dark"] .form-control::placeholder { color: rgba(209,220,232,0.4); }
+
+[data-theme="dark"] .form-label { color: #d1dce8; }
+
+[data-theme="dark"] .form-text  { color: rgba(209,220,232,0.5) !important; }
+
+[data-theme="dark"] .input-group-text {
+    background-color: #1e2e42;
+    border-color: rgba(255,255,255,0.15);
+    color: #d1dce8;
+}
+
+/* ── Alerts ─────────────────────────────────────────────────── */
+[data-theme="dark"] .alert {
+    border-color: rgba(255,255,255,0.1) !important;
+}
+
+[data-theme="dark"] .alert:not(.alert-success):not(.alert-danger):not(.alert-warning):not(.alert-info) {
+    background-color: #1e2e42;
+    color: #d1dce8;
+}
+
+/* ── Tables ─────────────────────────────────────────────────── */
+[data-theme="dark"] .table {
+    color: #d1dce8;
+    --bs-table-bg: #1a2535;
+    --bs-table-striped-bg: #1e2e42;
+    --bs-table-hover-bg: rgba(255,255,255,0.05);
+    --bs-table-border-color: rgba(255,255,255,0.08);
+}
+
+/* ── HR / borders ───────────────────────────────────────────── */
+[data-theme="dark"] hr { border-color: rgba(255,255,255,0.1); }
+
+[data-theme="dark"] .border-bottom,
+[data-theme="dark"] .border-top {
+    border-color: rgba(255,255,255,0.1) !important;
+}
+
+/* ── Badges ─────────────────────────────────────────────────── */
+[data-theme="dark"] .badge.bg-light { background-color: rgba(255,255,255,0.1) !important; color: #d1dce8 !important; }
+
+/* ── Auth pages ─────────────────────────────────────────────── */
+[data-theme="dark"] .bethel-auth-page {
+    background: linear-gradient(135deg, #0a1420 0%, #0f1c2e 100%);
+}
+
+[data-theme="dark"] .bethel-auth-card {
+    background: #1a2535;
+    box-shadow: 0 20px 60px rgba(0,0,0,0.5);
+}
+
+[data-theme="dark"] .bethel-float-input,
+[data-theme="dark"] .bethel-float-select {
+    background: #1e2e42;
+    border-color: rgba(255,255,255,0.15);
+    color: #d1dce8;
+}
+
+[data-theme="dark"] .bethel-float-input:focus,
+[data-theme="dark"] .bethel-float-select:focus {
+    border-color: var(--bethel-secondary);
+    box-shadow: 0 0 0 3px rgba(200,151,58,0.2);
+}
+
+[data-theme="dark"] .bethel-step-circle {
+    background: rgba(255,255,255,0.08);
+    border-color: rgba(255,255,255,0.12);
+    color: rgba(255,255,255,0.5);
+}
+
+[data-theme="dark"] .bethel-step-connector { background: rgba(255,255,255,0.1); }
+
+[data-theme="dark"] .bethel-auth-divider::before,
+[data-theme="dark"] .bethel-auth-divider::after,
+[data-theme="dark"] .bethel-auth-divider { color: rgba(255,255,255,0.3); }
+
+/* ── Theme toggle button ────────────────────────────────────── */
+.bethel-theme-btn {
+    width: 34px;
+    height: 34px;
+    border-radius: 8px;
+    background: rgba(255,255,255,0.1);
+    border: none;
+    cursor: pointer;
+    display: grid;
+    place-items: center;
+    color: rgba(255,255,255,0.85);
+    transition: background 0.2s, color 0.2s, transform 0.15s;
+    flex-shrink: 0;
+}
+
+.bethel-theme-btn:hover {
+    background: rgba(255,255,255,0.2);
+    color: #fff;
+    transform: scale(1.08);
+}
+
+/* ── Offcanvas dark mode ────────────────────────────────────── */
+[data-theme="dark"] .offcanvas {
+    background: #0f1923 !important;
+}
