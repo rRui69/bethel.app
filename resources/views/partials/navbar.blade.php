@@ -85,7 +85,11 @@
             <div class="d-flex align-items-center gap-2">
                 {{-- Theme toggle --}}
                 <div id="bethel-theme-toggle"></div>
+                      {{-- Notification Bell --}}
                 @auth
+                    <div id="bethel-notification-bell" data-is-auth="true"></div>
+                @endauth
+          @auth
                     {{-- Logged-in user dropdown --}}
                     <div class="dropdown">
                         <button class="btn d-flex align-items-center gap-2 text-white p-0 border-0"

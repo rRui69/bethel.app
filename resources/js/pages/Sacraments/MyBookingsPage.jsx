@@ -625,7 +625,7 @@ export default function MyBookingsPage({ isAuth = true }) {
                 {/* Header */}
                 <div style={{ marginBottom: '1.5rem' }}>
                     <a href="/sacraments" style={{ fontSize: '0.8rem', color: 'var(--bethel-primary,#1a3c5e)', textDecoration: 'none', display: 'inline-flex', alignItems: 'center', gap: 6, marginBottom: '0.75rem' }}>
-                        <FaArrowLeft size={11} /> Book Another Sacrament
+                        <FaArrowLeft size={11} /> Back to Sacraments
                     </a>
                     <h1 style={{ fontWeight: 800, fontSize: '1.6rem', color: 'var(--text-primary,#111)', margin: 0 }}>
                         My Bookings
