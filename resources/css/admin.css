@@ -312,6 +312,31 @@ body {
     display: flex;
     align-items: center;
     gap: 0.5rem;
+    flex-shrink: 0; /* Prevent actions from being crushed on narrow screens */
+}
+
+/* Hamburger toggle — only visible on mobile */
+.topnav-hamburger {
+    display: none;
+    width: 38px;
+    height: 38px;
+    border-radius: var(--admin-radius-sm);
+    border: 1px solid var(--border-color);
+    background: var(--bg-card);
+    color: var(--text-secondary);
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: var(--admin-transition);
+    flex-shrink: 0;
+}
+.topnav-hamburger:hover {
+    background: var(--bg-card-hover);
+    color: var(--admin-accent);
+    border-color: var(--admin-accent);
+}
+@media (max-width: 768px) {
+    .topnav-hamburger { display: flex; }
 }
 
 .theme-toggle {
@@ -819,11 +844,18 @@ body {
 ::-webkit-scrollbar-thumb:hover { background: var(--admin-accent); }
 
 @media (max-width: 768px) {
-    .admin-sidebar { transform: translateX(-100%); }
+    .admin-sidebar {
+        transform: translateX(-100%);
+        /* Ensure sidebar appears above topnav on mobile when open */
+        z-index: 1100;
+    }
     .admin-sidebar.mobile-open { transform: translateX(0); }
     .admin-main { margin-left: 0 !important; }
     .admin-topnav { left: 0 !important; }
     .sidebar-overlay { display: block; }
+    /* Shrink topnav breadcrumb text on mobile so actions stay visible */
+    .topnav-breadcrumb__page { font-size: 0.9rem; }
+    .topnav-breadcrumb__path { display: none; }
 }
 
 .sidebar-overlay {

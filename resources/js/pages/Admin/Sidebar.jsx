@@ -3,6 +3,7 @@ import {
     FaGauge, FaUsers, FaHandsPraying, FaCalendarDays,
     FaBullhorn, FaShield, FaChurch, FaChevronLeft,
     FaChevronRight, FaUserGear, FaWandMagicSparkles,
+    FaRightFromBracket,
 } from 'react-icons/fa6';
 
 const NAV_SECTIONS = [
@@ -118,9 +119,15 @@ function NavSection({ section, items, collapsed, stats, userRole }) {
     );
 }
 
-export default function Sidebar({ collapsed, onToggle, stats, userRole }) {
+export default function Sidebar({ collapsed, mobileOpen, onToggle, onMobileClose, stats, userRole }) {
+    const sidebarClass = [
+        'admin-sidebar',
+        collapsed   ? 'collapsed'    : '',
+        mobileOpen  ? 'mobile-open'  : '',
+    ].filter(Boolean).join(' ');
+
     return (
-        <aside className={`admin-sidebar${collapsed ? ' collapsed' : ''}`}>
+        <aside className={sidebarClass}>
 
             <a href="/admin/dashboard" className="sidebar-brand">
                 <div className="sidebar-brand__icon">
@@ -147,6 +154,27 @@ export default function Sidebar({ collapsed, onToggle, stats, userRole }) {
             </nav>
 
             <div className="sidebar-footer">
+                {/* Logout — always visible in sidebar footer (critical on mobile) */}
+                <form method="POST" action="/logout" style={{ marginBottom: '0.5rem' }}>
+                    <input
+                        type="hidden"
+                        name="_token"
+                        value={document.querySelector('meta[name="csrf-token"]')?.content}
+                    />
+                    <button
+                        type="submit"
+                        className="sidebar-nav-item"
+                        title={collapsed ? 'Sign Out' : undefined}
+                        style={{ width: '100%', color: '#ef4444' }}
+                    >
+                        <span className="nav-icon">
+                            <FaRightFromBracket size={16} aria-hidden="true" />
+                        </span>
+                        {!collapsed && <span className="nav-label">Sign Out</span>}
+                    </button>
+                </form>
+
+                {/* Desktop collapse toggle */}
                 <button
                     className="sidebar-collapse-btn"
                     onClick={onToggle}

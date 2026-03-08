@@ -37,6 +37,14 @@ Route::middleware('auth')->group(function () {
     // Submit sacrament (must be before {slug} wildcard — handled via POST so no conflict)
     Route::post('/sacraments/submit', [SacramentController::class, 'submit'])->name('sacraments.submit');
 
+    // Inbox — dedicated notification + message centre
+    Route::get('/inbox', [\App\Http\Controllers\InboxController::class, 'page'])->name('inbox');
+    Route::prefix('api/inbox')->name('api.inbox.')->group(function () {
+        Route::get('/',              [\App\Http\Controllers\InboxController::class, 'index'])->name('index');
+        Route::post('/read',         [\App\Http\Controllers\InboxController::class, 'markRead'])->name('read');
+        Route::post('/read-all',     [\App\Http\Controllers\InboxController::class, 'markAllRead'])->name('read-all');
+    });
+
     // Profile pages
     Route::get('/profile',     [\App\Http\Controllers\ProfileController::class, 'page'])->name('profile');
     Route::prefix('api/profile')->name('api.profile.')->group(function () {

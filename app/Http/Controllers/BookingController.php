@@ -27,7 +27,18 @@ class BookingController extends Controller
             ->with([
                 'parish:id,name,city',
                 'assignedClergy:id,title,first_name,last_name',
-                'latestPayment:id,sacrament_request_id,status,proof_path',
+                // FIX: Do NOT use 'latestPayment:columns' shorthand with latestOfMany()
+                // The ofMany self-join needs aggregate columns the shorthand strips out → QueryException.
+                'latestPayment',
+            ])
+            // FIX: Replace N+1 per-booking message queries with a single withCount aggregate.
+            // Previously: $req->messages()->whereHas(...)->count() inside map() = N separate queries.
+            // Now: one SQL COUNT subquery per row, all resolved in a single round-trip.
+            ->withCount([
+                'messages as unread_messages' => fn ($q) => $q
+                    ->where('read_by_parishioner', false)
+                    ->join('users as msg_senders', 'request_messages.sender_id', '=', 'msg_senders.id')
+                    ->whereIn('msg_senders.role', ['super_admin', 'parish_admin', 'helpdesk']),
             ]);
 
         if ($request->filled('status') && $request->status !== 'all') {
@@ -50,10 +61,7 @@ class BookingController extends Controller
                 'assigned_clergy' => $req->assignedClergy?->full_name,
                 'submitted_at'    => $req->created_at->format('M d, Y'),
                 'has_payment'     => $req->latestPayment !== null,
-                'unread_messages' => $req->messages()
-                                        ->where('read_by_parishioner', false)
-                                        ->whereHas('sender', fn ($q) => $q->whereIn('role', ['super_admin','parish_admin','helpdesk']))
-                                        ->count(),
+                'unread_messages' => (int) ($req->unread_messages ?? 0),
             ]);
 
         return response()->json($bookings);

@@ -45,11 +45,11 @@
             <div class="col-lg-2 col-md-6 col-6">
                 <h6 class="bethel-footer__heading">Sacraments</h6>
                 <a href="{{ url('/sacraments/baptism') }}">Baptism</a>
-                <a href="{{ url('/sacraments/marriage') }}">Marriage</a>
+                <a href="{{ url('/sacraments/wedding') }}">Wedding</a>
                 <a href="{{ url('/sacraments/confirmation') }}">Confirmation</a>
-                <a href="{{ url('/sacraments/confession') }}">Confession</a>
-                <a href="{{ url('/sacraments/communion') }}">First Communion</a>
-                <a href="{{ url('/sacraments/anointing') }}">Anointing</a>
+                <a href="{{ url('/sacraments/reconciliation') }}">Reconciliation</a>
+                <a href="{{ url('/sacraments/first-communion') }}">First Communion</a>
+                <a href="{{ url('/sacraments/anointing-of-the-sick') }}">Anointing</a>
             </div>
 
             {{-- Contact --}}

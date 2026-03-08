@@ -112,8 +112,8 @@ export default function NotificationBell({ isAuth = false }) {
                         <span style={{ fontWeight: 700, fontSize: '0.85rem', color: 'var(--text-primary, #111)' }}>
                             Notifications
                         </span>
-                        <a href="/my-bookings" style={{ fontSize: '0.75rem', color: 'var(--bethel-primary, #1a3c5e)', textDecoration: 'none' }}>
-                            My Bookings →
+                        <a href="/inbox" style={{ fontSize: '0.75rem', color: 'var(--bethel-primary, #1a3c5e)', textDecoration: 'none' }}>
+                            View Inbox →
                         </a>
                     </div>
 

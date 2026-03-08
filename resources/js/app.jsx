@@ -20,6 +20,7 @@ import SacramentsPage         from './pages/Sacraments/SacramentsPage';
 import SacramentFormPage      from './pages/Sacraments/SacramentFormPage';
 import MyBookingsPage         from './pages/Sacraments/MyBookingsPage';
 import NotificationBell       from './components/NotificationBell';
+import InboxPage              from './pages/Inbox/InboxPage';
 
 const PAGE_REGISTRY = [
     { id: 'bethel-home',                Component: Home                   },
@@ -30,7 +31,7 @@ const PAGE_REGISTRY = [
     { id: 'bethel-nav-brand-mobile',    Component: NavBrand               },
     { id: 'bethel-footer-brand',        Component: NavBrand               },
     { id: 'bethel-theme-toggle',        Component: ThemeToggle            },
-    { id: 'bethel-theme-toggle-mobile',  Component: ThemeToggle            },
+    { id: 'bethel-theme-toggle-mobile', Component: ThemeToggle            },
     { id: 'bethel-announcements',       Component: AnnouncementsPage      },
     { id: 'bethel-announcement-detail', Component: AnnouncementDetailPage },
     { id: 'bethel-events-page',         Component: EventsPage             },
@@ -38,8 +39,9 @@ const PAGE_REGISTRY = [
     { id: 'bethel-profile',             Component: ProfilePage            },
     { id: 'bethel-sacraments-page',     Component: SacramentsPage         },
     { id: 'bethel-sacrament-form',      Component: SacramentFormPage      },
-    { id: 'bethel-my-bookings',          Component: MyBookingsPage         },
-    { id: 'bethel-notification-bell',    Component: NotificationBell       },
+    { id: 'bethel-my-bookings',         Component: MyBookingsPage         },
+    { id: 'bethel-notification-bell',   Component: NotificationBell       },
+    { id: 'bethel-inbox',               Component: InboxPage              },
 ];
 
 PAGE_REGISTRY.forEach(({ id, Component }) => {

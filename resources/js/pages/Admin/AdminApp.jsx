@@ -22,7 +22,8 @@ const PAGE_MAP = {
 };
 
 export default function AdminApp({ stats: initialStats, admin, parishes, notifications, clergy }) {
-    const [collapsed, setCollapsed] = useState(false);
+    const [collapsed,    setCollapsed]    = useState(false);
+    const [mobileOpen,   setMobileOpen]   = useState(false);
 
     const [stats, setStats] = useState(initialStats ?? {});
 
@@ -35,6 +36,8 @@ export default function AdminApp({ stats: initialStats, admin, parishes, notific
         }
     }, []);
 
+    const closeMobileSidebar = useCallback(() => setMobileOpen(false), []);
+
     const CurrentPage = PAGE_MAP[window.location.pathname] || Dashboard;
 
     return (
@@ -43,10 +46,21 @@ export default function AdminApp({ stats: initialStats, admin, parishes, notific
 
                 <Sidebar
                     collapsed={collapsed}
+                    mobileOpen={mobileOpen}
                     onToggle={() => setCollapsed(c => !c)}
+                    onMobileClose={closeMobileSidebar}
                     stats={stats}
                     userRole={admin?.role}
                 />
+
+                {/* Mobile overlay — clicking outside closes sidebar */}
+                {mobileOpen && (
+                    <div
+                        className="sidebar-overlay"
+                        onClick={closeMobileSidebar}
+                        aria-hidden="true"
+                    />
+                )}
 
                 <div className={`admin-main${collapsed ? ' sidebar-collapsed' : ''}`}>
 
@@ -54,6 +68,7 @@ export default function AdminApp({ stats: initialStats, admin, parishes, notific
                         collapsed={collapsed}
                         admin={admin}
                         notifications={notifications}
+                        onMobileMenuToggle={() => setMobileOpen(o => !o)}
                     />
 
                     <main className="admin-content">

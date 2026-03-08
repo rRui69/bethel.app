@@ -36,7 +36,7 @@ class SacramentRequestController extends AdminBaseController
         $query = SacramentRequest::with([
             'user:id,first_name,last_name,email',
             'assignedClergy:id,title,first_name,last_name',
-            'latestPayment:id,sacrament_request_id,status',
+            'latestPayment',
         ]);
 
         // Filter by type name

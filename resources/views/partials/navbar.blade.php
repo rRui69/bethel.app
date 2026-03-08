@@ -106,9 +106,11 @@
                         </button>
                         <ul class="dropdown-menu dropdown-menu-end">
                             <li class="px-3 py-2 border-bottom">
-                                <div class="fw-semibold" style="font-size:0.9rem;">{{ auth()->user()->name }}</div>
+                                <div class="fw-semibold" style="font-size:0.9rem;">{{ auth()->user()->first_name }} {{ auth()->user()->last_name }}</div>
                                 <div class="text-muted" style="font-size:0.78rem;">{{ auth()->user()->email }}</div>
                             </li>
+                            <li><a class="dropdown-item" href="{{ url('/inbox') }}">
+                                <i class="bi bi-envelope me-2"></i>Inbox</a></li>
                             <li><a class="dropdown-item" href="{{ url('/profile') }}">
                                 <i class="bi bi-person me-2"></i>View / Edit Profile</a></li>
                             <li><a class="dropdown-item" href="{{ url('/my-bookings') }}">
@@ -159,10 +161,42 @@
         </ul>
         <div class="px-3 pt-3 mt-2" style="border-top:1px solid rgba(255,255,255,0.1);">
             @auth
-                <a href="{{ url('/profile') }}" class="btn w-100 mb-2"
-                   style="background:var(--bethel-secondary);color:var(--bethel-primary);font-weight:700;">
-                    <i class="bi bi-person me-2"></i>My Profile
+                {{-- User info strip --}}
+                <div class="d-flex align-items-center gap-2 mb-3 pb-3" style="border-bottom:1px solid rgba(255,255,255,0.1);">
+                    <div style="width:38px;height:38px;border-radius:50%;background:var(--bethel-secondary);display:grid;place-items:center;font-size:0.9rem;font-weight:700;color:var(--bethel-primary);flex-shrink:0;">
+                        {{ strtoupper(substr(auth()->user()->first_name, 0, 1)) }}
+                    </div>
+                    <div style="min-width:0;">
+                        <div style="font-weight:600;font-size:0.875rem;color:#fff;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">
+                            {{ auth()->user()->first_name }} {{ auth()->user()->last_name }}
+                        </div>
+                        <div style="font-size:0.72rem;color:rgba(255,255,255,0.5);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">
+                            {{ auth()->user()->email }}
+                        </div>
+                    </div>
+                </div>
+
+                {{-- Auth nav links --}}
+                <a href="{{ url('/inbox') }}" class="nav-link d-flex align-items-center gap-2 mb-1 px-2 py-2 rounded" style="color:#fff;">
+                    <i class="bi bi-envelope"></i> Inbox
                 </a>
+                <a href="{{ url('/my-bookings') }}" class="nav-link d-flex align-items-center gap-2 mb-1 px-2 py-2 rounded" style="color:#fff;">
+                    <i class="bi bi-calendar-check"></i> My Bookings
+                </a>
+                <a href="{{ url('/profile') }}" class="nav-link d-flex align-items-center gap-2 mb-1 px-2 py-2 rounded" style="color:#fff;">
+                    <i class="bi bi-person"></i> My Profile
+                </a>
+
+                {{-- Logout --}}
+                <div class="mt-2 pt-2" style="border-top:1px solid rgba(255,255,255,0.1);">
+                    <form method="POST" action="{{ route('logout') }}">
+                        @csrf
+                        <button type="submit" class="btn w-100 d-flex align-items-center justify-content-center gap-2"
+                                style="background:rgba(239,68,68,0.15);color:#fca5a5;border:1px solid rgba(239,68,68,0.3);font-weight:600;border-radius:8px;padding:0.55rem;">
+                            <i class="bi bi-box-arrow-right"></i> Logout
+                        </button>
+                    </form>
+                </div>
             @else
                 <a href="{{ url('/login') }}" class="btn btn-outline-light w-100 mb-2">Login</a>
                 <a href="{{ url('/register') }}" class="btn w-100"
