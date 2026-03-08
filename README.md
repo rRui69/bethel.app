@@ -1,79 +1,168 @@
-# [cite_start]BethelApp [cite: 1]
+<div align="center">
+  <h1>⛪ BethelApp</h1>
+  <p><strong>Deployment and Setup Guide</strong></p>
+  <p><em>Web-Based Operation Management System for Diocesan Catholic Church</em></p>
+</div>
 
-[cite_start]Web-Based Operation Management System for Diocesan Catholic Church[cite: 3].
-[cite_start]*BethelApp — House of God, Digitally Served [cite: 168]*.
+<br />
 
-## [cite_start]🛠 Tech Stack [cite: 166]
-* [cite_start]**Backend Framework:** Laravel 12.x [cite: 167]
-* [cite_start]**Language:** PHP 8.2+ [cite: 167]
-* [cite_start]**Frontend UI:** React 19.x [cite: 167]
-* [cite_start]**Build Tool:** Vite 7.x [cite: 167]
-* [cite_start]**CSS Framework & Utility:** Bootstrap 5.3 and Tailwind 4.x [cite: 167]
-* [cite_start]**Database:** MySQL 8.0 [cite: 167]
-* [cite_start]**Local Server Bundle:** Laragon 6.0 [cite: 167]
+## 🛠 Technology Stack
 
-## [cite_start]📋 Prerequisites [cite: 5]
+<table align="center" width="100%">
+  <tr>
+    <td align="center"><b>Backend</b></td>
+    <td>Laravel 12 • PHP 8.2+</td>
+  </tr>
+  <tr>
+    <td align="center"><b>Frontend</b></td>
+    <td>React 19 • Bootstrap 5 • Tailwind 4.x</td>
+  </tr>
+  <tr>
+    <td align="center"><b>Environment</b></td>
+    <td>Laragon 6.0 • MySQL 8.0 • Vite 7.x</td>
+  </tr>
+</table>
 
-[cite_start]Before you begin, make sure the following software is installed on your machine[cite: 6]:
-* [cite_start]**Laragon (Full)** — version 6.0 or later[cite: 8]. [cite_start]Laragon includes PHP 8.2+ [cite: 13][cite_start], MySQL 8.0 [cite: 14][cite_start], Apache 2.4 [cite: 15][cite_start], and phpMyAdmin[cite: 16].
-* [cite_start]**Node.js** — version 18 or later[cite: 9].
-* [cite_start]**Composer** — version 2.x[cite: 10].
-* [cite_start]**Git** — for cloning the repository[cite: 11].
+<br />
 
-> [cite_start]**Note:** If you already have Laragon installed, make sure it is running with Apache and MySQL services active before proceeding[cite: 17].
+## 📋 System Requirements
 
-## [cite_start]🚀 Installation & Deployment Guide [cite: 2]
+Please ensure your local environment meets the following requirements before proceeding:
 
-### [cite_start]Step 1: Clone the Repository [cite: 18]
-[cite_start]Copy or clone the project folder into Laragon's web root directory[cite: 19]:
-[cite_start]`C:\laragon\www\bethel_app\` [cite: 20]
+* <b>Laragon (Full)</b> — version 6.0+ (This automatically provides PHP 8.2+, MySQL 8.0, Apache 2.4, and phpMyAdmin).
+* <b>Node.js</b> — version 18+.
+* <b>Composer</b> — version 2.x.
+* <b>Git</b> — for repository management.
 
-> [cite_start]⚠️ **Important:** The folder name bethel_app must match exactly[cite: 21]. [cite_start]Laragon auto-creates a virtual host from the folder name[cite: 21].
+> <b>ℹ️ Note:</b> Ensure your Laragon environment is actively running both the Apache and MySQL services.
 
-### [cite_start]Step 2: Configure the Environment [cite: 25]
-[cite_start]Duplicate the example environment file and rename it[cite: 26]:
-[cite_start]`copy .env.example .env` [cite: 28]
+<br />
 
-[cite_start]Update the values in your `.env` file[cite: 29]:
-[cite_start]APP_NAME=BethelApp [cite: 30]
-[cite_start]APP_ENV=local [cite: 31]
-[cite_start]APP_DEBUG=true [cite: 33]
-[cite_start]APP_URL=http://bethel_app.test [cite: 34]
-[cite_start]DB_CONNECTION=mysql [cite: 35]
-[cite_start]DB_DATABASE=bethel_app [cite: 38]
-[cite_start]DB_USERNAME=root [cite: 39]
-[cite_start]DB_PASSWORD= [cite: 40]
+## 🚀 Installation Instructions
 
-> [cite_start]⚠️ **Note:** Laragon's default MySQL credentials are: username = root, password = (blank)[cite: 44].
+<details>
+  <summary><b>Step 1: Clone the Repository</b></summary>
+  <br />
+  Place the project folder directly into your Laragon web root.
+  <pre><code>C:\laragon\www\bethel_app\</code></pre>
+  <i>⚠️ The directory must be named exactly <code>bethel_app</code> so Laragon can properly generate the virtual host. Make sure all necessary patch files are applied to your local directory.</i>
+</details>
 
-### [cite_start]Step 3: Create the Database [cite: 46]
-1. [cite_start]Open your browser and go to: `http://localhost/phpmyadmin`[cite: 47].
-2. Log in with: Username: root | [cite_start]Password: (leave blank)[cite: 48].
-3. [cite_start]Set the database name to: `bethel_app`[cite: 50].
-4. [cite_start]Set Collation to: `utf8mb4_unicode_ci` and click "Create"[cite: 51, 52].
+<details>
+  <summary><b>Step 2: Environment Configuration</b></summary>
+  <br />
+  Create your environment configuration file by duplicating the example file:
+  <pre><code>copy .env.example .env</code></pre>
+  Update the following database connection details inside your new <code>.env</code> file:
+  <ul>
+    <li><code>DB_DATABASE=bethel_app</code></li>
+    <li><code>DB_USERNAME=root</code></li>
+    <li><code>DB_PASSWORD=</code> (Leave this blank if using standard Laragon defaults)</li>
+  </ul>
+</details>
 
-### [cite_start]Step 4: Install Dependencies & Setup [cite: 61, 93]
-[cite_start]Open the terminal in Laragon and navigate into the project (`cd bethel_app`)[cite: 54, 59]. Run these commands in order:
+<details>
+  <summary><b>Step 3: Database Initialization</b></summary>
+  <br />
+  <ol>
+    <li>Navigate to <code>http://localhost/phpmyadmin</code> in your web browser.</li>
+    <li>Log in using <b>root</b> as the username and leave the password field empty.</li>
+    <li>Create a fresh database and name it exactly <code>bethel_app</code>.</li>
+    <li>Ensure the collation is set to <code>utf8mb4_unicode_ci</code> before saving.</li>
+  </ol>
+</details>
 
-1. [cite_start]**Install PHP Dependencies:** `composer install`[cite: 62, 63].
-2. [cite_start]**Generate the Application Key:** `php artisan key:generate`[cite: 67, 68].
-3. [cite_start]**Run Database Migrations:** `php artisan migrate`[cite: 72, 73].
-4. [cite_start]**Seed the Database:** `php artisan db:seed`[cite: 82, 83].
-5. [cite_start]**Create the Storage Symlink:** `php artisan storage:link`[cite: 89, 90].
-6. [cite_start]**Install Node Dependencies & Build Frontend:** `npm install` and `npm run build`[cite: 94, 95, 98, 99].
+<details>
+  <summary><b>Step 4: Build and Setup Commands</b></summary>
+  <br />
+  Open the Laragon terminal, change directories to your project folder (<code>cd bethel_app</code>), and run these build commands in sequence:
+  <pre><code>composer install
+php artisan key:generate
+php artisan migrate
+php artisan db:seed
+php artisan storage:link
+npm install
+npm run build</code></pre>
+</details>
 
-### [cite_start]Step 5: Access the Application [cite: 106]
-[cite_start]Laragon automatically creates a virtual host[cite: 108]. Access the app at:
-[cite_start]`http://bethel_app.test`[cite: 109].
+<details>
+  <summary><b>Step 5: Launch the Application</b></summary>
+  <br />
+  With the virtual host established by Laragon, you can view the live application at:
+  <pre><code>http://bethel_app.test</code></pre>
+</details>
 
-## [cite_start]🔐 Default Login Accounts [cite: 85]
-* [cite_start]**Ministerial Head IT Admin:** admin@bethelapp.com / Admin@1234 [cite: 86]
-* [cite_start]**Ministerial IT Helpdesk:** helpdesk@bethelapp.com / Helpdesk@1234 [cite: 86]
-* [cite_start]**Parishioner:** juan@mail.com / Password@123 [cite: 86]
+<br />
 
-> [cite_start]🛑 **IMPORTANT:** Change these passwords immediately after your first login in a production environment[cite: 87].
+## 🔐 System Access Credentials
 
-## [cite_start]⚙️ Quick Command Reference [cite: 142]
-* [cite_start]`php artisan migrate:fresh --seed` : Drop all tables + migrate + seed (full reset)[cite: 143].
-* [cite_start]`npm run dev` : Start Vite dev server with hot-reload[cite: 143].
-* [cite_start]`php artisan optimize:clear` : Clear all caches[cite: 143].
+Running the database seeder will populate the system with these default profiles:
+
+<table width="100%">
+  <thead>
+    <tr>
+      <th align="left">Access Level</th>
+      <th align="left">Email Address</th>
+      <th align="left">Password</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td>Head IT Admin</td>
+      <td><code>admin@bethelapp.com</code></td>
+      <td><code>Admin@1234</code></td>
+    </tr>
+    <tr>
+      <td>IT Helpdesk</td>
+      <td><code>helpdesk@bethelapp.com</code></td>
+      <td><code>Helpdesk@1234</code></td>
+    </tr>
+    <tr>
+      <td>Standard Parishioner</td>
+      <td><code>juan@mail.com</code></td>
+      <td><code>Password@123</code></td>
+    </tr>
+  </tbody>
+</table>
+
+> 🛑 <b>SECURITY WARNING:</b> These credentials are for local development only. You must update these passwords immediately when deploying to a live server.
+
+<br />
+
+## 🧰 Common Troubleshooting
+
+<details>
+  <summary><b>Missing Application Key Error</b></summary>
+  <br />
+  If the application throws an encryption key error, execute: <code>php artisan key:generate</code>
+</details>
+
+<details>
+  <summary><b>Database Connection Refused</b></summary>
+  <br />
+  Verify that the MySQL service is actively running inside your Laragon control panel.
+</details>
+
+<details>
+  <summary><b>Missing Target Class Error</b></summary>
+  <br />
+  Refresh your Composer autoloader files by running: <code>composer dump-autoload</code>
+</details>
+
+<details>
+  <summary><b>UI Assets Not Loading (Blank Screen)</b></summary>
+  <br />
+  Recompile your frontend assets by running <code>npm run build</code>, then force refresh your browser cache (Ctrl+Shift+R).
+</details>
+
+<details>
+  <summary><b>419 Page Expired Error</b></summary>
+  <br />
+  This indicates a CSRF token mismatch. Clear the application cache using <code>php artisan optimize:clear</code> and refresh the page.
+</details>
+
+---
+
+<p align="center">
+  <i>College of Computer Studies · Lyceum of Subic Bay · 2026</i>
+</p>
