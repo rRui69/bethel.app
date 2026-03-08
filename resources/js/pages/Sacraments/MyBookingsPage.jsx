@@ -49,19 +49,43 @@ function MessageThread({ requestId, onClose }) {
     const [body,     setBody]     = useState('');
     const [sending,  setSending]  = useState(false);
     const [loading,  setLoading]  = useState(true);
-    const bottomRef               = useRef(null);
+    const bottomRef    = useRef(null);
+    const scrollBoxRef = useRef(null);
+    const pollRef      = useRef(null);
 
-    const load = useCallback(async () => {
+    const isNearBottom = () => {
+        const el = scrollBoxRef.current;
+        if (!el) return true;
+        return el.scrollHeight - el.scrollTop - el.clientHeight < 80;
+    };
+
+    const fetchMessages = useCallback(async () => {
         try {
             const res  = await fetch(`/api/bookings/${requestId}/messages`);
             const data = await res.json();
-            setMessages(Array.isArray(data) ? data : []);
+            if (Array.isArray(data)) {
+                setMessages(prev => {
+                    if (JSON.stringify(prev.map(m => m.id)) === JSON.stringify(data.map(m => m.id))) return prev;
+                    return data;
+                });
+            }
         } catch {}
-        finally { setLoading(false); }
     }, [requestId]);
 
-    useEffect(() => { load(); }, [load]);
-    useEffect(() => { bottomRef.current?.scrollIntoView({ behavior: 'smooth' }); }, [messages]);
+    useEffect(() => {
+        (async () => {
+            await fetchMessages();
+            setLoading(false);
+        })();
+        pollRef.current = setInterval(fetchMessages, 3000);
+        return () => clearInterval(pollRef.current);
+    }, [fetchMessages]);
+
+    useEffect(() => {
+        if (isNearBottom()) {
+            bottomRef.current?.scrollIntoView({ behavior: 'smooth' });
+        }
+    }, [messages]);
 
     const send = async () => {
         if (!body.trim()) return;
@@ -110,7 +134,7 @@ function MessageThread({ requestId, onClose }) {
                 </div>
 
                 {/* Messages */}
-                <div style={{ flex: 1, overflowY: 'auto', padding: '1rem', display: 'flex', flexDirection: 'column', gap: 10 }}>
+                <div ref={scrollBoxRef} style={{ flex: 1, overflowY: 'auto', padding: '1rem', display: 'flex', flexDirection: 'column', gap: 10 }}>
                     {loading ? (
                         <p style={{ textAlign: 'center', color: '#999', fontSize: '0.82rem' }}>Loading messages…</p>
                     ) : messages.length === 0 ? (
