@@ -3,6 +3,8 @@
   # ⛪ BethelApp
   **Step-by-Step Deployment Guide**
   *Web-Based Operation Management System for Diocesan Catholic Church*
+  
+  <p><b>Laravel 12 &nbsp;•&nbsp; React 19 &nbsp;•&nbsp; Laragon &nbsp;•&nbsp; Bootstrap 5</b></p>
 
   ![Laravel](https://img.shields.io/badge/Laravel_12-FF2D20?style=for-the-badge&logo=laravel&logoColor=white)
   ![React](https://img.shields.io/badge/React_19-20232A?style=for-the-badge&logo=react&logoColor=61DAFB)
