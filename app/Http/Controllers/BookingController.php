@@ -108,8 +108,12 @@ class BookingController extends Controller
                 'method'     => $payment->method,
                 'amount'     => $payment->amount,
                 'status'     => $payment->status,
+                // proof_path may be a full Cloudinary https:// URL (production)
+                // or a relative local path like "payments/file.jpg" (dev).
                 'proof_url'  => $payment->proof_path
-                                    ? Storage::url($payment->proof_path)
+                                    ? (str_starts_with($payment->proof_path, 'http')
+                                        ? $payment->proof_path
+                                        : Storage::disk('public')->url($payment->proof_path))
                                     : null,
                 'admin_notes'=> $payment->admin_notes,
                 'submitted'  => $payment->created_at->format('M d, Y'),
@@ -131,7 +135,24 @@ class BookingController extends Controller
         ]);
 
         // Store proof
-        $path = $request->file('proof')->store('payments', 'public');
+        // In production (Railway), local storage is ephemeral — files are wiped on every restart.
+        // We use Cloudinary when the env is configured and the package is installed.
+        // Locally (dev), falls back to local disk — no Cloudinary package needed.
+        $useCloudinary = config('app.env') !== 'local'
+            && env('CLOUDINARY_URL')
+            && class_exists(\CloudinaryLabs\CloudinaryLaravel\CloudinaryEngine::class);
+
+        if ($useCloudinary) {
+            $uploaded = cloudinary()->upload($request->file('proof')->getRealPath(), [
+                'folder'        => 'bethel_app/payments',
+                'resource_type' => 'auto',
+            ]);
+            $path     = $uploaded->getSecurePath();
+            $proofUrl = $path;
+        } else {
+            $path     = $request->file('proof')->store('payments', 'public');
+            $proofUrl = Storage::disk('public')->url($path);
+        }
 
         // Upsert — replace if previously rejected, create if first time
         $existing = $sacramentRequest->latestPayment;
@@ -180,7 +201,7 @@ class BookingController extends Controller
 
         return response()->json([
             'payment_status' => 'submitted',
-            'proof_url'      => Storage::url($path),
+            'proof_url'      => $proofUrl,
         ], 201);
     }
 
