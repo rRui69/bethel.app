@@ -11,6 +11,7 @@ use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
+use App\Services\CloudinaryUploader;
 use Illuminate\Support\Facades\Log;
 
 class SacramentController extends Controller
@@ -92,13 +93,38 @@ class SacramentController extends Controller
             'preferred_time'    => 'required|string|max:10',
             'participants'      => 'required|integer|min:1|max:500',
             'details'           => 'nullable|array',
+            // Accept any uploaded files for document fields (e.g. birth certificate)
+            'files'             => 'nullable|array',
+            'files.*'           => 'nullable|file|mimes:jpg,jpeg,png,webp,pdf|max:10240',
         ]);
 
         $type = SacramentType::findOrFail($validated['sacrament_type_id']);
 
-        // ── Save the request inside a transaction ─────────────────
-        // Notification failure must NEVER roll back a successful request.
-        // We save first, then attempt notifications separately.
+        // ── Upload any document files (birth cert, marriage cert, etc.) ──
+        // files[] is a map of field_id => UploadedFile from the form schema
+        $details = $validated['details'] ?? [];
+
+        if ($request->hasFile('files')) {
+            foreach ($request->file('files') as $fieldId => $uploadedFile) {
+                try {
+                    $url = CloudinaryUploader::upload(
+                        $uploadedFile,
+                        'bethel_app/documents',
+                        'public',
+                        'documents'
+                    );
+                    $details[$fieldId] = $url; // overwrite filename-only value with real URL
+                } catch (\RuntimeException $e) {
+                    Log::warning('SacramentController@submit: document upload failed', [
+                        'field' => $fieldId,
+                        'error' => $e->getMessage(),
+                    ]);
+                    // Non-fatal — keep the filename text if upload fails
+                }
+            }
+        }
+
+        // ── Save the request ──────────────────────────────────────
         $sacramentRequest = SacramentRequest::create([
             'user_id'           => Auth::id(),
             'parish_id'         => $validated['parish_id'],
@@ -107,7 +133,7 @@ class SacramentController extends Controller
             'preferred_date'    => $validated['preferred_date'],
             'preferred_time'    => $validated['preferred_time'],
             'participants'      => $validated['participants'],
-            'details'           => $validated['details'] ?? [],
+            'details'           => $details,
             'status'            => 'pending',
         ]);
 

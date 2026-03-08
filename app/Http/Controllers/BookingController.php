@@ -10,6 +10,7 @@ use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Log;
+use App\Services\CloudinaryUploader;
 use Illuminate\Support\Facades\Storage;
 
 class BookingController extends Controller
@@ -108,12 +109,8 @@ class BookingController extends Controller
                 'method'     => $payment->method,
                 'amount'     => $payment->amount,
                 'status'     => $payment->status,
-                // proof_path may be a full Cloudinary https:// URL (production)
-                // or a relative local path like "payments/file.jpg" (dev).
                 'proof_url'  => $payment->proof_path
-                                    ? (str_starts_with($payment->proof_path, 'http')
-                                        ? $payment->proof_path
-                                        : Storage::disk('public')->url($payment->proof_path))
+                                    ? CloudinaryUploader::resolveUrl($payment->proof_path)
                                     : null,
                 'admin_notes'=> $payment->admin_notes,
                 'submitted'  => $payment->created_at->format('M d, Y'),
@@ -134,25 +131,18 @@ class BookingController extends Controller
             'proof'  => 'required|file|mimes:jpg,jpeg,png,webp,pdf|max:5120', // 5MB
         ]);
 
-        // Store proof
-        // In production (Railway), local storage is ephemeral — files are wiped on every restart.
-        // We use Cloudinary when the env is configured and the package is installed.
-        // Locally (dev), falls back to local disk — no Cloudinary package needed.
-        $useCloudinary = config('app.env') !== 'local'
-            && env('CLOUDINARY_URL')
-            && class_exists(\CloudinaryLabs\CloudinaryLaravel\CloudinaryEngine::class);
-
-        if ($useCloudinary) {
-            $uploaded = cloudinary()->upload($request->file('proof')->getRealPath(), [
-                'folder'        => 'bethel_app/payments',
-                'resource_type' => 'auto',
-            ]);
-            $path     = $uploaded->getSecurePath();
-            $proofUrl = $path;
-        } else {
-            $path     = $request->file('proof')->store('payments', 'public');
-            $proofUrl = Storage::disk('public')->url($path);
+        // Upload proof via CloudinaryUploader service (falls back to local disk in dev)
+        try {
+            $path = CloudinaryUploader::upload(
+                $request->file('proof'),
+                'bethel_app/payments',
+                'public',
+                'payments'
+            );
+        } catch (\RuntimeException $e) {
+            return response()->json(['message' => $e->getMessage()], 500);
         }
+        $proofUrl = $path;
 
         // Upsert — replace if previously rejected, create if first time
         $existing = $sacramentRequest->latestPayment;
@@ -266,6 +256,7 @@ class BookingController extends Controller
             ->map(fn ($m) => [
                 'id'        => $m->id,
                 'body'      => $m->body,
+                'image_url' => $m->image_url,
                 'sender'    => $m->sender?->full_name ?? 'Unknown',
                 'role'      => $m->sender?->role ?? 'unknown',
                 'sender_id' => $m->sender_id,
@@ -284,13 +275,34 @@ class BookingController extends Controller
         }
 
         $validated = $request->validate([
-            'body' => 'required|string|max:2000',
+            'body'  => 'nullable|string|max:2000',
+            'image' => 'nullable|file|mimes:jpg,jpeg,png,webp,gif|max:5120',
         ]);
+
+        // At least one of body or image must be present
+        if (empty($validated['body']) && !$request->hasFile('image')) {
+            return response()->json(['message' => 'Message body or image is required.'], 422);
+        }
+
+        $imageUrl = null;
+        if ($request->hasFile('image')) {
+            try {
+                $imageUrl = CloudinaryUploader::upload(
+                    $request->file('image'),
+                    'bethel_app/messages',
+                    'public',
+                    'messages'
+                );
+            } catch (\RuntimeException $e) {
+                return response()->json(['message' => $e->getMessage()], 500);
+            }
+        }
 
         $message = RequestMessage::create([
             'sacrament_request_id' => $sacramentRequest->id,
             'sender_id'            => Auth::id(),
-            'body'                 => $validated['body'],
+            'body'                 => $validated['body'] ?? '',
+            'image_url'            => $imageUrl,
             'read_by_admin'        => false,
             'read_by_parishioner'  => true,
         ]);
@@ -319,6 +331,7 @@ class BookingController extends Controller
         return response()->json([
             'id'        => $message->id,
             'body'      => $message->body,
+            'image_url' => $message->image_url,
             'sender'    => $message->sender?->full_name,
             'role'      => $message->sender?->role,
             'sender_id' => $message->sender_id,

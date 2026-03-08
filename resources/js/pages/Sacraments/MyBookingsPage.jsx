@@ -47,7 +47,9 @@ function humanize(key) {
 function MessageThread({ requestId, onClose }) {
     const [messages, setMessages] = useState([]);
     const [body,     setBody]     = useState('');
+    const [msgImage, setMsgImage] = useState(null);  // File object for image attachment
     const [sending,  setSending]  = useState(false);
+    const imageInputRef = useRef(null);
     const [loading,  setLoading]  = useState(true);
     const bottomRef    = useRef(null);
     const scrollBoxRef = useRef(null);
@@ -88,19 +90,34 @@ function MessageThread({ requestId, onClose }) {
     }, [messages]);
 
     const send = async () => {
-        if (!body.trim()) return;
+        if (!body.trim() && !msgImage) return;
         setSending(true);
         try {
-            const res = await fetch(`/api/bookings/${requestId}/messages`, {
-                method:  'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.content,
-                },
-                body: JSON.stringify({ body: body.trim() }),
-            });
+            const csrf = document.querySelector('meta[name="csrf-token"]')?.content;
+            let res;
+            if (msgImage) {
+                const fd = new FormData();
+                if (body.trim()) fd.append('body', body.trim());
+                fd.append('image', msgImage);
+                res = await fetch(`/api/bookings/${requestId}/messages`, {
+                    method: 'POST',
+                    headers: { 'X-CSRF-TOKEN': csrf },
+                    body: fd,
+                });
+            } else {
+                res = await fetch(`/api/bookings/${requestId}/messages`, {
+                    method:  'POST',
+                    headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': csrf },
+                    body:    JSON.stringify({ body: body.trim() }),
+                });
+            }
             const msg = await res.json();
-            if (res.ok) { setMessages(prev => [...prev, msg]); setBody(''); }
+            if (res.ok) {
+                setMessages(prev => [...prev, msg]);
+                setBody('');
+                setMsgImage(null);
+                if (imageInputRef.current) imageInputRef.current.value = '';
+            }
         } catch {}
         finally { setSending(false); }
     };
@@ -157,7 +174,20 @@ function MessageThread({ requestId, onClose }) {
                                     color: m.is_mine ? '#fff' : 'var(--text-primary,#111)',
                                     fontSize: '0.85rem', lineHeight: 1.5,
                                 }}>
-                                    {m.body}
+                                    {m.body && <div>{m.body}</div>}
+                                    {m.image_url && (
+                                        <a href={m.image_url} target="_blank" rel="noreferrer">
+                                            <img
+                                                src={m.image_url}
+                                                alt="attachment"
+                                                style={{
+                                                    maxWidth: '100%', maxHeight: 220,
+                                                    borderRadius: 8, marginTop: m.body ? 6 : 0,
+                                                    display: 'block', cursor: 'pointer',
+                                                }}
+                                            />
+                                        </a>
+                                    )}
                                 </div>
                             </div>
                         ))
@@ -166,35 +196,66 @@ function MessageThread({ requestId, onClose }) {
                 </div>
 
                 {/* Input */}
-                <div style={{
-                    padding: '0.75rem 1rem', borderTop: '1px solid var(--border-color,#e5e7eb)',
-                    display: 'flex', gap: 8,
-                }}>
-                    <textarea
-                        rows={2}
-                        value={body}
-                        onChange={e => setBody(e.target.value)}
-                        onKeyDown={e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); send(); } }}
-                        placeholder="Type a message…"
-                        style={{
-                            flex: 1, resize: 'none', borderRadius: 10, padding: '0.5rem 0.75rem',
-                            border: '1px solid var(--border-color,#e5e7eb)', fontSize: '0.85rem',
-                            fontFamily: 'inherit', background: 'var(--bg-input,#fff)',
-                            color: 'var(--text-primary,#111)', outline: 'none',
-                        }}
-                    />
-                    <button
-                        onClick={send} disabled={sending || !body.trim()}
-                        style={{
-                            background: 'var(--bethel-primary,#1a3c5e)', color: '#fff', border: 'none',
-                            borderRadius: 10, padding: '0 1rem', cursor: 'pointer',
-                            opacity: (!body.trim() || sending) ? 0.4 : 1,
-                            display: 'flex', alignItems: 'center', gap: 6, fontSize: '0.82rem', fontWeight: 600,
-                        }}
-                    >
-                        {sending ? <FaSpinner size={12} className="spin" /> : <FaPaperPlane size={12} />}
-                        Send
-                    </button>
+                <div style={{ padding: '0.75rem 1rem', borderTop: '1px solid var(--border-color,#e5e7eb)' }}>
+                    {msgImage && (
+                        <div style={{
+                            marginBottom: 8, padding: '0.4rem 0.7rem',
+                            background: 'var(--bg-hover,#f1f5f9)', borderRadius: 8,
+                            display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+                            fontSize: '0.78rem', color: '#555',
+                        }}>
+                            <span>📎 {msgImage.name}</span>
+                            <button onClick={() => { setMsgImage(null); if (imageInputRef.current) imageInputRef.current.value = ''; }}
+                                style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#999', padding: 0 }}>
+                                <FaX size={10} />
+                            </button>
+                        </div>
+                    )}
+                    <div style={{ display: 'flex', gap: 8 }}>
+                        <textarea
+                            rows={2}
+                            value={body}
+                            onChange={e => setBody(e.target.value)}
+                            onKeyDown={e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); send(); } }}
+                            placeholder="Type a message…"
+                            style={{
+                                flex: 1, resize: 'none', borderRadius: 10, padding: '0.5rem 0.75rem',
+                                border: '1px solid var(--border-color,#e5e7eb)', fontSize: '0.85rem',
+                                fontFamily: 'inherit', background: 'var(--bg-input,#fff)',
+                                color: 'var(--text-primary,#111)', outline: 'none',
+                            }}
+                        />
+                        {/* Attach image */}
+                        <button
+                            onClick={() => imageInputRef.current?.click()}
+                            title="Attach image"
+                            style={{
+                                background: msgImage ? '#e0f2fe' : 'var(--bg-hover,#f1f5f9)',
+                                border: '1px solid var(--border-color,#e5e7eb)',
+                                borderRadius: 10, padding: '0 0.75rem', cursor: 'pointer',
+                                color: msgImage ? '#0284c7' : '#888',
+                            }}
+                        >
+                            <FaPaperclip size={14} />
+                        </button>
+                        <input
+                            ref={imageInputRef} type="file" accept="image/*"
+                            style={{ display: 'none' }}
+                            onChange={e => setMsgImage(e.target.files[0] ?? null)}
+                        />
+                        <button
+                            onClick={send} disabled={sending || (!body.trim() && !msgImage)}
+                            style={{
+                                background: 'var(--bethel-primary,#1a3c5e)', color: '#fff', border: 'none',
+                                borderRadius: 10, padding: '0 1rem', cursor: 'pointer',
+                                opacity: ((!body.trim() && !msgImage) || sending) ? 0.4 : 1,
+                                display: 'flex', alignItems: 'center', gap: 6, fontSize: '0.82rem', fontWeight: 600,
+                            }}
+                        >
+                            {sending ? <FaSpinner size={12} className="spin" /> : <FaPaperPlane size={12} />}
+                            Send
+                        </button>
+                    </div>
                 </div>
             </div>
         </div>

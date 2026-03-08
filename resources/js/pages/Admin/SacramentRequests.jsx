@@ -171,7 +171,20 @@ function MessagePanel({ requestId }) {
                                 color: isMine(m) ? '#fff' : 'var(--text-primary,#111)',
                                 fontSize: '0.82rem', lineHeight: 1.5,
                             }}>
-                                {m.body}
+                                {m.body && <div>{m.body}</div>}
+                                {m.image_url && (
+                                    <a href={m.image_url} target="_blank" rel="noreferrer">
+                                        <img
+                                            src={m.image_url}
+                                            alt="attachment"
+                                            style={{
+                                                maxWidth: '100%', maxHeight: 200,
+                                                borderRadius: 6, marginTop: m.body ? 5 : 0,
+                                                display: 'block', cursor: 'pointer',
+                                            }}
+                                        />
+                                    </a>
+                                )}
                             </div>
                         </div>
                     ))
