@@ -1,10 +1,25 @@
 <div align="center">
-  <h1>⛪ BethelApp</h1>
-  <p><strong>Deployment and Setup Guide</strong></p>
-  <p><em>Web-Based Operation Management System for Diocesan Catholic Church</em></p>
+  
+  # ⛪ BethelApp
+  [cite_start]**Step-by-Step Deployment Guide** [cite: 2]
+  [cite_start]*Web-Based Operation Management System for Diocesan Catholic Church* [cite: 3]
+
+  ![Laravel](https://img.shields.io/badge/Laravel_12-FF2D20?style=flat-square&logo=laravel&logoColor=white) 
+  ![React](https://img.shields.io/badge/React_19-20232A?style=flat-square&logo=react&logoColor=61DAFB) 
+  ![PHP](https://img.shields.io/badge/PHP_8.2+-777BB4?style=flat-square&logo=php&logoColor=white) 
+  ![MySQL](https://img.shields.io/badge/MySQL_8.0-4479A1?style=flat-square&logo=mysql&logoColor=white)
+
 </div>
 
 <br />
+
+## 📋 Prerequisites
+[cite_start]Before you begin, make sure the following software is installed on your machine. [cite: 6]
+
+* [cite_start]**Laragon (Full)** — version 6.0 or later [cite: 8]
+* [cite_start]**Node.js** — version 18 or later [cite: 9]
+* [cite_start]**Composer** — version 2.x [cite: 10]
+* [cite_start]**Git** — for cloning the repository [cite: 11]
 
 ## 🛠 Technology Stack
 
