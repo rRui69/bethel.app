@@ -27,7 +27,7 @@
 [data-theme="dark"] {
     --bg-page:        #002147;
     --bg-sidebar:     #0d1f38;
-    --bg-card:        rgba(255,255,255,0.05);
+    --bg-card:        rgb(8, 38, 95);
     --bg-action-card: rgba(0, 13, 32, 0.85);
     --bg-card-hover:  rgba(255,255,255,0.08);
     --bg-hover:       rgba(255,255,255,0.06);
@@ -400,7 +400,7 @@ body {
     top: calc(100% + 0.75rem);
     right: 0;
     width: 340px;
-    background: var(--bg-sidebar);
+    background: var(--bg-card);
     border: 1px solid var(--border-color);
     border-radius: var(--admin-radius);
     box-shadow: var(--shadow-card);
@@ -550,7 +550,7 @@ body {
     top: calc(100% + 0.75rem);
     right: 0;
     width: 220px;
-    background: var(--bg-sidebar);
+    background: var(--bg-card);
     border: 1px solid var(--border-color);
     border-radius: var(--admin-radius);
     box-shadow: var(--shadow-card);

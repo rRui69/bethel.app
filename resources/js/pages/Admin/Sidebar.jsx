@@ -31,14 +31,14 @@ const NAV_SECTIONS = [
                 badge: null,
                 roles: ['super_admin'],
             },
-            {
+            /*{
                 id:    'parishioners',
                 label: 'Parishioners',
                 icon:  FaUsers,
                 href:  '/admin/parishioners',
                 badge: null,
                 roles: ['super_admin'],
-            },
+            },*/
             {
                 id:    'sacrament-types',
                 label: 'Manage Sacraments',

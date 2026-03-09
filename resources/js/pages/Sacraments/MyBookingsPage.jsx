@@ -4,7 +4,7 @@ import {
     FaHandsPraying, FaCalendarDays, FaClock, FaUsers, FaChurch,
     FaCircleCheck, FaCircleXmark, FaHourglassHalf, FaCreditCard,
     FaPersonPraying, FaComment, FaChevronDown, FaChevronUp,
-    FaUpload, FaPaperPlane, FaX, FaArrowLeft, FaSpinner,
+    FaUpload, FaPaperPlane, FaX, FaArrowLeft, FaSpinner, FaPaperclip,
 } from 'react-icons/fa6';
 
 // ── Helpers ────────────────────────────────────────────────────
@@ -446,7 +446,6 @@ function BookingCard({ booking, onRefresh }) {
     const [expanded,      setExpanded]      = useState(false);
     const [detail,        setDetail]        = useState(null);
     const [loadingDetail, setLoadingDetail] = useState(false);
-    const [showMessages,  setShowMessages]  = useState(false);
     const [showPayment,   setShowPayment]   = useState(false);
     const isTargeted = window.location.hash === `#request-${booking.id}`;
 
@@ -620,27 +619,54 @@ function BookingCard({ booking, onRefresh }) {
                                 )}
 
                                 {/* Payment proof preview */}
-                                {detail?.payment?.proof_url && (
-                                    <div style={{ marginBottom: '1rem' }}>
-                                        <p style={{ fontSize: '0.72rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: 1, color: '#9ca3af', marginBottom: 6 }}>
-                                            Payment Proof
-                                        </p>
-                                        <a href={detail.payment.proof_url} target="_blank" rel="noreferrer">
-                                            <img src={detail.payment.proof_url} alt="Proof"
-                                                style={{ maxHeight: 140, borderRadius: 8, border: '1px solid var(--border-color,#e5e7eb)', objectFit: 'contain' }} />
-                                        </a>
-                                    </div>
-                                )}
+                                {detail?.payment?.proof_url && (() => {
+                                    const url = detail.payment.proof_url.startsWith('http')
+                                        ? detail.payment.proof_url
+                                        : null;
+                                    return url ? (
+                                        <div style={{ marginBottom: '1rem' }}>
+                                            <p style={{ fontSize: '0.72rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: 1, color: '#9ca3af', marginBottom: 6 }}>
+                                                Payment Proof
+                                            </p>
+                                            <a href={url} target="_blank" rel="noreferrer"
+                                                style={{ display: 'block', marginBottom: 6 }}>
+                                                <img
+                                                    src={url}
+                                                    alt="Payment Proof"
+                                                    style={{
+                                                        maxWidth: '100%', maxHeight: 160, borderRadius: 8,
+                                                        border: '1px solid var(--border-color,#e5e7eb)',
+                                                        objectFit: 'contain', display: 'block', cursor: 'zoom-in',
+                                                        background: 'var(--bg-hover,#f8fafc)',
+                                                    }}
+                                                />
+                                            </a>
+                                            <a href={url} target="_blank" rel="noreferrer"
+                                                style={{
+                                                    display: 'inline-flex', alignItems: 'center', gap: 5,
+                                                    fontSize: '0.75rem', color: '#2563eb', fontWeight: 600,
+                                                    textDecoration: 'none', padding: '4px 10px',
+                                                    background: '#eff6ff', borderRadius: 6,
+                                                }}>
+                                                ↗ View Full Image
+                                            </a>
+                                        </div>
+                                    ) : null;
+                                })()}
 
                                 {/* Action buttons */}
                                 <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
                                     {canMessage && (
-                                        <button onClick={() => setShowMessages(true)} style={{
-                                            display: 'flex', alignItems: 'center', gap: 6,
-                                            padding: '0.45rem 1rem', borderRadius: 8, cursor: 'pointer',
-                                            border: '1px solid #6366f1', background: 'rgba(99,102,241,0.08)',
-                                            color: '#6366f1', fontSize: '0.82rem', fontWeight: 600,
-                                        }}>
+                                        <a
+                                            href={`/inbox?thread=${booking.id}`}
+                                            style={{
+                                                display: 'inline-flex', alignItems: 'center', gap: 6,
+                                                padding: '0.45rem 1rem', borderRadius: 8, cursor: 'pointer',
+                                                border: '1px solid #6366f1', background: 'rgba(99,102,241,0.08)',
+                                                color: '#6366f1', fontSize: '0.82rem', fontWeight: 600,
+                                                textDecoration: 'none',
+                                            }}
+                                        >
                                             <FaComment size={11} />
                                             Message Parish
                                             {booking.unread_messages > 0 && (
@@ -648,7 +674,7 @@ function BookingCard({ booking, onRefresh }) {
                                                     {booking.unread_messages}
                                                 </span>
                                             )}
-                                        </button>
+                                        </a>
                                     )}
                                     {canPay && (
                                         <button onClick={() => setShowPayment(true)} style={{
@@ -668,9 +694,6 @@ function BookingCard({ booking, onRefresh }) {
                 )}
             </div>
 
-            {showMessages && (
-                <MessageThread requestId={booking.id} onClose={() => { setShowMessages(false); onRefresh(); }} />
-            )}
             {showPayment && (
                 <PaymentModal
                     requestId={booking.id}

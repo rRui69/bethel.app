@@ -217,7 +217,7 @@ export default function TopNav({ collapsed, admin, notifications = [] }) {
                             </div>
                             <a href="/profile"      className="profile-dropdown__item"><FaUser    size={13} /> My Profile</a>
                             <a href="/admin/users"  className="profile-dropdown__item"><FaUserGear size={13} /> User Management</a>
-                            <a href="/admin/settings" className="profile-dropdown__item"><FaGear  size={13} /> Settings</a>
+                            
                             <div style={{ borderTop: '1px solid var(--border-color)' }}>
                                 <form method="POST" action="/logout">
                                     <input type="hidden" name="_token" value={document.querySelector('meta[name="csrf-token"]')?.content} />
@@ -225,6 +225,7 @@ export default function TopNav({ collapsed, admin, notifications = [] }) {
                                         <FaRightFromBracket size={13} /> Sign Out
                                     </button>
                                 </form>
+                                <br></br>
                             </div>
                         </div>
                     )}

@@ -154,7 +154,7 @@ class BookingController extends Controller
                 'user_id'              => Auth::id(),
                 'method'               => $validated['method'],
                 'amount'               => $validated['amount'] ?? null,
-                'proof_path'           => $path,
+                'proof_path'           => $proofUrl,
                 'status'               => 'submitted',
             ]);
         }

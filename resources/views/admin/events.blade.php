@@ -1,14 +1,12 @@
-@extends('layouts.app')
+@extends('layouts.admin')
 
-@section('title', 'Upcoming Events')
-@section('meta_description', 'Browse upcoming community, liturgical, and youth events across the diocese.')
+@section('title', 'Events')
 
 @push('head')
 <script>
-    window.__PAGE_DATA__ = {!! json_encode($pageData) !!};
+    window.__ADMIN_DATA__ = {{ Js::from($adminData) }};
 </script>
 @endpush
 
 @section('content')
-    <div id="bethel-events-page"></div>
-@endsection
+@endsection 

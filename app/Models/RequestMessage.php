@@ -9,7 +9,7 @@ class RequestMessage extends Model
 {
     protected $fillable = [
         'sacrament_request_id', 'sender_id',
-        'body', 'read_by_admin', 'read_by_parishioner',
+        'body', 'image_url', 'read_by_admin', 'read_by_parishioner',
     ];
 
     protected $casts = [

@@ -1,14 +1,12 @@
-@extends('layouts.app')
+@extends('layouts.admin')
 
 @section('title', 'Parish Announcements')
-@section('meta_description', 'Stay informed with the latest news and updates from your diocese.')
 
 @push('head')
 <script>
-    window.__PAGE_DATA__ = {!! json_encode($pageData) !!};
+    window.__ADMIN_DATA__ = {{ Js::from($adminData) }};
 </script>
 @endpush
 
 @section('content')
-    <div id="bethel-announcements"></div>
 @endsection

@@ -122,7 +122,9 @@ class SacramentRequestController extends AdminBaseController
                 'amount'     => $payment->amount,
                 'status'     => $payment->status,
                 'proof_url'  => $payment->proof_path
-                                    ? Storage::url($payment->proof_path)
+                                    ? (str_starts_with($payment->proof_path, 'http')
+                                        ? $payment->proof_path
+                                        : Storage::url($payment->proof_path))
                                     : null,
                 'submitted'  => $payment->created_at->format('M d, Y g:i A'),
                 'admin_notes'=> $payment->admin_notes,

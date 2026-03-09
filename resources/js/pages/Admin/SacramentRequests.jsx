@@ -247,7 +247,9 @@ function PaymentVerifyPanel({ requestId, payment, onVerified }) {
     const [saving,  setSaving]  = useState(false);
     const [notes,   setNotes]   = useState('');
 
-    if (!payment || payment.status === 'verified') return null;
+    if (!payment) return null;
+
+    const isVerified = payment.status === 'verified';
 
     const verify = async (status) => {
         setSaving(true);
@@ -260,47 +262,70 @@ function PaymentVerifyPanel({ requestId, payment, onVerified }) {
         finally { setSaving(false); }
     };
 
+    const url = payment.proof_url?.startsWith('http') ? payment.proof_url : null;
+
     return (
         <div>
-            {payment.proof_url && (
-                <div style={{ marginBottom: '0.75rem', padding: '0.75rem',
-                    background: '#f8fafc', borderRadius: 10, border: '1px solid #e5e7eb' }}>
-                    <a href={payment.proof_url} target="_blank" rel="noreferrer">
-                        <img src={payment.proof_url} alt="Payment Proof"
-                            style={{ width: '100%', maxHeight: 180, borderRadius: 8,
-                                objectFit: 'contain', display: 'block', cursor: 'zoom-in',
-                                background: '#fff', border: '1px solid #e5e7eb' }} />
+            {/* Proof image — always shown regardless of verification status */}
+            {url && (
+                <div style={{ marginBottom: '0.75rem' }}>
+                    <a href={url} target="_blank" rel="noreferrer"
+                        style={{ display: 'block', marginBottom: 8 }}>
+                        <img
+                            src={url}
+                            alt="Payment Proof"
+                            style={{
+                                width: '100%', maxHeight: 200, borderRadius: 10,
+                                objectFit: 'contain', display: 'block',
+                                background: '#f8fafc', border: '1px solid #e5e7eb',
+                                cursor: 'zoom-in',
+                            }}
+                        />
                     </a>
-                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginTop: 8 }}>
+                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 6 }}>
                         <p style={{ fontSize: '0.72rem', color: '#9ca3af', margin: 0 }}>
-                            {payment.method?.toUpperCase()} · {payment.amount ? `₱${payment.amount}` : 'Amount not specified'} · {payment.submitted}
+                            {payment.method?.toUpperCase()}
+                            {payment.amount ? ` · ₱${payment.amount}` : ''}
+                            {payment.submitted ? ` · ${payment.submitted}` : ''}
                         </p>
-                        <a href={payment.proof_url} target="_blank" rel="noreferrer"
-                            style={{ display: 'inline-flex', alignItems: 'center', gap: 4,
+                        <a
+                            href={url}
+                            target="_blank"
+                            rel="noreferrer"
+                            style={{
+                                display: 'inline-flex', alignItems: 'center', gap: 4,
                                 fontSize: '0.72rem', color: '#2563eb', fontWeight: 600,
                                 textDecoration: 'none', padding: '3px 8px',
-                                background: '#eff6ff', borderRadius: 6 }}>
+                                background: '#eff6ff', borderRadius: 6,
+                            }}
+                        >
                             <FaUpRightFromSquare size={9} /> View Full Image
                         </a>
                     </div>
                 </div>
             )}
-            <textarea
-                className="um-input"
-                rows={2}
-                placeholder="Optional note to parishioner…"
-                value={notes}
-                onChange={e => setNotes(e.target.value)}
-                style={{ width: '100%', resize: 'none', fontSize: '0.82rem', marginBottom: '0.5rem', fontFamily: 'inherit' }}
-            />
-            <div style={{ display: 'flex', gap: 8 }}>
-                <button className="um-btn um-btn--danger"   onClick={() => verify('rejected')} disabled={saving} style={{ fontSize: '0.8rem', padding: '0.4rem 0.9rem' }}>
-                    <FaXmark size={11} /> Reject
-                </button>
-                <button className="um-btn um-btn--success"  onClick={() => verify('verified')} disabled={saving} style={{ fontSize: '0.8rem', padding: '0.4rem 0.9rem' }}>
-                    <FaCheck size={11} /> Verify
-                </button>
-            </div>
+
+            {/* Verify/Reject actions — hidden once already verified */}
+            {!isVerified && (
+                <>
+                    <textarea
+                        className="um-input"
+                        rows={2}
+                        placeholder="Optional note to parishioner…"
+                        value={notes}
+                        onChange={e => setNotes(e.target.value)}
+                        style={{ width: '100%', resize: 'none', fontSize: '0.82rem', marginBottom: '0.5rem', fontFamily: 'inherit' }}
+                    />
+                    <div style={{ display: 'flex', gap: 8 }}>
+                        <button className="um-btn um-btn--danger"  onClick={() => verify('rejected')} disabled={saving} style={{ fontSize: '0.8rem', padding: '0.4rem 0.9rem' }}>
+                            <FaXmark size={11} /> Reject
+                        </button>
+                        <button className="um-btn um-btn--success" onClick={() => verify('verified')} disabled={saving} style={{ fontSize: '0.8rem', padding: '0.4rem 0.9rem' }}>
+                            <FaCheck size={11} /> Verify
+                        </button>
+                    </div>
+                </>
+            )}
         </div>
     );
 }
@@ -446,19 +471,63 @@ function SacramentRequestDetailModal({ requestId, onClose, onStatusChange }) {
                                         ))}
                                     </div>
 
-                                    {data.details && Object.keys(data.details).length > 0 && (
-                                        <>
-                                            <div className="um-section-label" style={{ margin: '1.25rem 0 0.5rem' }}>Submitted Information</div>
-                                            <div className="um-detail-grid">
-                                                {Object.entries(data.details).map(([key, val]) => (
-                                                    <div key={key} className="um-detail-row">
-                                                        <span className="um-detail-label">{humanize(key)}</span>
-                                                        <span className="um-detail-value">{Array.isArray(val) ? val.join(', ') : (val || '—')}</span>
-                                                    </div>
-                                                ))}
-                                            </div>
-                                        </>
-                                    )}
+                                    {data.details && Object.keys(data.details).length > 0 && (() => {
+                                        // Build { fieldId → { label, type } } from the form_schema
+                                        // the controller now returns. Falls back to humanize() if
+                                        // a key somehow has no schema entry (schema deleted after submit).
+                                        const schemaMap = Object.fromEntries(
+                                            (data.field_schema ?? []).map(f => [f.id, f])
+                                        );
+                                        return (
+                                            <>
+                                                <div className="um-section-label" style={{ margin: '1.25rem 0 0.5rem' }}>Submitted Information</div>
+                                                <div className="um-detail-grid">
+                                                    {Object.entries(data.details).map(([key, val]) => {
+                                                        const field   = schemaMap[key];
+                                                        const label   = field?.label ?? humanize(key);
+                                                        const isImage = (field?.type === 'file'
+                                                            || (typeof val === 'string' && val.startsWith('http')))
+                                                            && typeof val === 'string' && val.startsWith('http');
+                                                        const display = Array.isArray(val) ? val.join(', ') : (val || '—');
+                                                        return (
+                                                            <div key={key} className="um-detail-row" style={{ flexDirection: 'column', alignItems: 'flex-start', gap: 6 }}>
+                                                                <span className="um-detail-label">{label}</span>
+                                                                {isImage ? (
+                                                                    <div>
+                                                                        <a href={val} target="_blank" rel="noreferrer"
+                                                                            style={{ display: 'block', marginBottom: 6 }}>
+                                                                            <img
+                                                                                src={val}
+                                                                                alt={label}
+                                                                                style={{
+                                                                                    maxWidth: '100%', maxHeight: 120,
+                                                                                    borderRadius: 8, objectFit: 'contain',
+                                                                                    border: '1px solid #e5e7eb',
+                                                                                    background: '#f8fafc', display: 'block',
+                                                                                    cursor: 'zoom-in',
+                                                                                }}
+                                                                            />
+                                                                        </a>
+                                                                        <a href={val} target="_blank" rel="noreferrer"
+                                                                            style={{
+                                                                                display: 'inline-flex', alignItems: 'center', gap: 4,
+                                                                                fontSize: '0.72rem', color: '#2563eb', fontWeight: 600,
+                                                                                textDecoration: 'none', padding: '3px 8px',
+                                                                                background: '#eff6ff', borderRadius: 6,
+                                                                            }}>
+                                                                            <FaUpRightFromSquare size={9} /> View Full Image
+                                                                        </a>
+                                                                    </div>
+                                                                ) : (
+                                                                    <span className="um-detail-value">{display}</span>
+                                                                )}
+                                                            </div>
+                                                        );
+                                                    })}
+                                                </div>
+                                            </>
+                                        );
+                                    })()}
 
                                     <div className="um-section-label" style={{ margin: '1.25rem 0 0.5rem' }}>Admin Notes</div>
                                     <textarea

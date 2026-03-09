@@ -407,6 +407,26 @@ export default function InboxPage({ isAuth = true }) {
 
     useEffect(() => { if (isAuth) load(); }, [isAuth, load]);
 
+    // Auto-open thread when arriving from ?thread=X (e.g. redirected from My Bookings)
+    useEffect(() => {
+        if (!data) return;
+        const params   = new URLSearchParams(window.location.search);
+        const threadId = params.get('thread');
+        if (!threadId) return;
+        const thread = (data.threads ?? []).find(t => String(t.id) === threadId);
+        if (thread) {
+            setTab('messages');
+            setOpenThread({ id: thread.id, sacramentType: thread.sacrament_type });
+        } else {
+            // Thread exists but has no messages yet — still open it via a lightweight entry
+            setTab('messages');
+            setOpenThread({ id: Number(threadId), sacramentType: 'Sacrament Request' });
+        }
+        // Remove the param from the URL so a refresh doesn't re-open it
+        const clean = window.location.pathname;
+        window.history.replaceState(null, '', clean);
+    }, [data]);
+
     // Optimistic mark-as-read for notifications
     const handleNotifRead = (id) => {
         setData(prev => ({
