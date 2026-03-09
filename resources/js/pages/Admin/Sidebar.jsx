@@ -4,6 +4,7 @@ import {
     FaBullhorn, FaChurch, FaChevronLeft,
     FaChevronRight, FaUserGear, FaWandMagicSparkles,
     FaRightFromBracket, FaPersonPraying, FaBookOpen,
+    FaCalendarCheck,
 } from 'react-icons/fa6';
 
 const NAV_SECTIONS = [
@@ -68,6 +69,14 @@ const NAV_SECTIONS = [
                 label: 'Events',
                 icon:  FaCalendarDays,
                 href:  '/admin/events',
+                badge: null,
+                roles: ['super_admin', 'parish_admin'],
+            },
+            {
+                id:    'mass-schedules',
+                label: 'Mass Schedules',
+                icon:  FaCalendarCheck,
+                href:  '/admin/mass-schedules',
                 badge: null,
                 roles: ['super_admin', 'parish_admin'],
             },

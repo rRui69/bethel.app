@@ -21,6 +21,7 @@ import SacramentFormPage      from './pages/Sacraments/SacramentFormPage';
 import MyBookingsPage         from './pages/Sacraments/MyBookingsPage';
 import NotificationBell       from './components/NotificationBell';
 import InboxPage              from './pages/Inbox/InboxPage';
+import MassSchedulePage       from './pages/MassSchedule/MassSchedulePage';
 
 const PAGE_REGISTRY = [
     { id: 'bethel-home',                Component: Home                   },
@@ -42,6 +43,7 @@ const PAGE_REGISTRY = [
     { id: 'bethel-my-bookings',         Component: MyBookingsPage         },
     { id: 'bethel-notification-bell',   Component: NotificationBell       },
     { id: 'bethel-inbox',               Component: InboxPage              },
+    { id: 'bethel-mass-schedule-page',  Component: MassSchedulePage       },
 ];
 
 PAGE_REGISTRY.forEach(({ id, Component }) => {

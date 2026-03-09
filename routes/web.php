@@ -14,15 +14,17 @@ use App\Http\Controllers\Admin\EventController;
 use App\Http\Controllers\Admin\SacramentRequestController as AdminSacramentRequestController;
 use App\Http\Controllers\Admin\ClergyManagementController;
 use App\Http\Controllers\Admin\ClergyController;
+use App\Http\Controllers\Admin\MassScheduleController as AdminMassScheduleController;
+use App\Http\Controllers\MassScheduleController;
 use App\Http\Controllers\SacramentController;
-use App\Http\Controllers\Admin\SacramentTypeController;
 
 Route::get('/', [HomeController::class, 'index'])->name('home');
 
 // Public APIs — no auth required
 Route::get('/api/sacrament-types', [SacramentTypeController::class, 'publicIndex'])->name('api.sacrament-types.public');
 
-Route::get('/mass-schedule',                fn () => view('coming-soon'))->name('mass-schedule');
+Route::get('/mass-schedule',             [MassScheduleController::class, 'index'])->name('mass-schedule');
+Route::get('/api/mass-schedules/public', [MassScheduleController::class, 'public'])->name('api.mass-schedules.public');
 Route::get('/announcements',               [AnnouncementsController::class, 'index'])->name('announcements');
 Route::get('/announcements/{announcement}',[AnnouncementsController::class, 'show'])->name('announcements.show');
 Route::get('/events',                      [EventsController::class, 'index'])->name('events');
@@ -33,7 +35,7 @@ Route::get('/contact',                     fn () => view('coming-soon'))->name('
 
 require __DIR__.'/auth.php';
 
-// Authenticated parishioner routes
+// ── Authenticated parishioner routes ───────────────────────────
 Route::middleware('auth')->group(function () {
 
     // Submit sacrament (must be before {slug} wildcard — handled via POST so no conflict)
@@ -73,7 +75,7 @@ Route::middleware('auth')->group(function () {
     });
 });
 
-// Admin routes
+// ── Admin routes ───────────────────────────────────────────────
 Route::prefix('admin')
     ->middleware(['auth', 'admin'])
     ->name('admin.')
@@ -90,11 +92,14 @@ Route::prefix('admin')
         Route::get('/sacrament-types', [SacramentTypeController::class,        'page'])->name('sacrament-types');
         Route::get('/roles',           fn () => view('coming-soon'))->name('roles');
 
-        // Clergy Management (super_admin creates/manages clergy accounts)
+        // ── Clergy Management (super_admin creates/manages clergy accounts) ──
         Route::get('/clergy',           [ClergyManagementController::class, 'page'])->name('clergy');
 
-        // Clergy Dashboard (clergy members view their own assignments)
+        // ── Clergy Dashboard (clergy members view their own assignments) ───
         Route::get('/clergy-dashboard', [ClergyController::class,            'page'])->name('clergy-dashboard');
+
+        // ── Mass Schedules ────────────────────────────────────────────────
+        Route::get('/mass-schedules',   [AdminMassScheduleController::class,  'page'])->name('mass-schedules');
 
         Route::prefix('api')
             ->middleware('throttle:60,1')
@@ -149,7 +154,7 @@ Route::prefix('admin')
                 // Misc
                 Route::post('/notifications/read', [UserManagementController::class, 'markNotificationRead'])->name('notifications.read');
 
-                // Clergy Management
+                // ── Clergy Management API (super_admin only, enforced in controller) ──
                 Route::get('/clergy/stats',                [ClergyManagementController::class, 'stats'])->name('clergy.stats');
                 Route::get('/clergy',                      [ClergyManagementController::class, 'index'])->name('clergy.index');
                 Route::post('/clergy',                     [ClergyManagementController::class, 'store'])->name('clergy.store');
@@ -158,10 +163,19 @@ Route::prefix('admin')
                 Route::delete('/clergy/{user}',            [ClergyManagementController::class, 'destroy'])->name('clergy.destroy');
                 Route::post('/clergy/{user}/reset-password',[ClergyManagementController::class, 'resetPassword'])->name('clergy.reset-password');
 
-                // Clergy Dashboard
+                // ── Clergy Dashboard API (clergy member's own portal) ──────────────
                 Route::get('/clergy-profile',                              [ClergyController::class, 'myProfile'])->name('clergy-profile');
                 Route::get('/clergy-assignments',                          [ClergyController::class, 'assignments'])->name('clergy-assignments');
                 Route::post('/clergy-assignments/{sacramentRequest}/respond', [ClergyController::class, 'respond'])->name('clergy-assignments.respond');
                 Route::get('/clergy-records',                              [ClergyController::class, 'records'])->name('clergy-records');
+
+                // ── Mass Schedules ────────────────────────────────────────────────
+                Route::get('/mass-schedules',                              [AdminMassScheduleController::class, 'index'])->name('mass-schedules.index');
+                Route::post('/mass-schedules',                             [AdminMassScheduleController::class, 'store'])->name('mass-schedules.store');
+                Route::get('/mass-schedules/{massSchedule}',               [AdminMassScheduleController::class, 'show'])->name('mass-schedules.show');
+                Route::patch('/mass-schedules/{massSchedule}',             [AdminMassScheduleController::class, 'update'])->name('mass-schedules.update');
+                Route::delete('/mass-schedules/{massSchedule}',            [AdminMassScheduleController::class, 'destroy'])->name('mass-schedules.destroy');
+                Route::post('/mass-schedules/{massSchedule}/cancel',       [AdminMassScheduleController::class, 'cancel'])->name('mass-schedules.cancel');
+                Route::delete('/mass-schedules/{massSchedule}/cancel/{cancellation}', [AdminMassScheduleController::class, 'removeCancel'])->name('mass-schedules.cancel.remove');
             });
     });

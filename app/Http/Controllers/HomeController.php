@@ -6,6 +6,7 @@ use App\Models\Parish;
 use App\Models\Announcement;
 use App\Models\Event;
 use App\Models\User;
+use App\Models\MassSchedule;
 use Carbon\Carbon;
 
 class HomeController extends Controller
@@ -44,27 +45,49 @@ class HomeController extends Controller
             ])
             ->toArray();
 
-        // Mass Schedules
-        // Clergy are now Users with role='clergymen'. Their schedule is in clergy_profiles.
-        $schedules = User::where('role', 'clergymen')
-            ->where('account_status', 'Active')
-            ->with(['clergyProfile' => fn ($q) => $q->whereNotNull('schedule')->with('parish:id,name,city')])
-            ->get()
-            ->filter(fn ($u) => $u->clergyProfile?->schedule)
-            ->flatMap(function ($user) {
-                $clergy  = $user->clergyProfile;
-                $slots   = $clergy->schedule ?? [];
+        // Mass Schedules — today's day + next 2 days, max 5 entries, for homepage widget
+        $today     = Carbon::now();
+        $todayDow  = $today->dayOfWeek; // 0=Sun
 
-                return collect($slots)->map(fn ($slot) => [
-                    'day'       => $slot['day']  ?? '',
-                    'time'      => $slot['time'] ?? '',
-                    'type'      => $slot['type'] ?? 'Regular Mass',
-                    'parish'    => $clergy->parish?->name ?? '',
-                    'location'  => $clergy->parish?->city ?? '',
-                    'celebrant' => $clergy->full_name,
-                ]);
+        $schedules = MassSchedule::active()
+            ->with([
+                'parish:id,name,city',
+                'clergy:id,first_name,last_name',
+                'clergy.clergyProfile:user_id,title',
+            ])
+            ->where(function ($q) use ($today, $todayDow) {
+                // Recurring: today's day or next two days
+                $q->where(function ($r) use ($todayDow) {
+                    $r->where('schedule_type', 'recurring')
+                      ->whereIn('day_of_week', [
+                          $todayDow,
+                          ($todayDow + 1) % 7,
+                          ($todayDow + 2) % 7,
+                      ]);
+                })
+                // One-time: within the next 3 days
+                ->orWhere(function ($r) use ($today) {
+                    $r->where('schedule_type', 'one_time')
+                      ->whereBetween('specific_date', [
+                          $today->toDateString(),
+                          $today->copy()->addDays(2)->toDateString(),
+                      ]);
+                });
             })
-            ->values()
+            ->orderByRaw("FIELD(schedule_type, 'recurring', 'one_time')")
+            ->orderBy('start_time')
+            ->take(5)
+            ->get()
+            ->map(fn ($s) => [
+                'day'       => $s->schedule_type === 'recurring'
+                    ? $s->day_name
+                    : $s->specific_date->format('l'),
+                'time'      => $s->formatted_start_time,
+                'type'      => $s->type,
+                'parish'    => $s->parish?->name ?? '',
+                'location'  => $s->parish?->city ?? '',
+                'celebrant' => $s->clergy?->titled_name ?? '',
+            ])
             ->toArray();
 
         // Upcoming Events

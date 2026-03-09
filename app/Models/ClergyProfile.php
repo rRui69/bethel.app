@@ -30,12 +30,10 @@ class ClergyProfile extends Model
         'parish_id',
         'title',
         'specialization',
-        'schedule',
+        // 'schedule' removed — mass slots now live in the mass_schedules table
     ];
 
-    protected $casts = [
-        'schedule' => 'array',
-    ];
+    protected $casts = [];
 
     // ── Relationships ────────────────────────────────────────────
 
