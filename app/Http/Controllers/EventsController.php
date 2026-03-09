@@ -11,7 +11,7 @@ class EventsController extends Controller
     public function index()
     {
         $events = Event::regular()
-            ->with(['parish:id,name,city', 'clergy:id,title,first_name,last_name'])
+            ->with(['parish:id,name,city', 'clergy:id,first_name,last_name', 'clergy.clergyProfile:user_id,title'])
             ->where('status', 'Approved')
             ->upcoming()
             ->get()
@@ -34,7 +34,7 @@ class EventsController extends Controller
                 'location'    => $e->location,
                 'parish'      => $e->parish?->name,
                 'city'        => $e->parish?->city,
-                'celebrant'   => $e->clergy?->full_name,
+                'celebrant'   => $e->clergy?->titled_name,
             ])
             ->toArray();
 
@@ -49,6 +49,8 @@ class EventsController extends Controller
     public function show(Event $event)
     {
         abort_unless($event->status === 'Approved' && $event->isRegular(), 404);
+
+        $event->load(['parish:id,name,city', 'clergy:id,first_name,last_name', 'clergy.clergyProfile:user_id,title']);
 
         $pageData = [
             'event' => [
@@ -69,7 +71,7 @@ class EventsController extends Controller
                 'location'     => $event->location,
                 'parish'       => $event->parish?->name,
                 'city'         => $event->parish?->city,
-                'celebrant'    => $event->clergy?->full_name,
+                'celebrant'    => $event->clergy?->titled_name,
             ],
         ];
 
