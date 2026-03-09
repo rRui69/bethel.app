@@ -16,9 +16,17 @@ class Parish extends Model
     ];
 
     // Relationships
+    public function clergyProfiles()
+    {
+        return $this->hasMany(ClergyProfile::class);
+    }
+
+    /**
+     * @deprecated Use clergyProfiles() — the clergy table no longer exists.
+     */
     public function clergy()
     {
-        return $this->hasMany(Clergy::class);
+        return $this->clergyProfiles();
     }
 
     public function events()

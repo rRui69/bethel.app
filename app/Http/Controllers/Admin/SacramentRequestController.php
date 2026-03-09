@@ -3,7 +3,6 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Admin\AdminBaseController;
-use App\Models\Clergy;
 use App\Models\Notification;
 use App\Models\RequestMessage;
 use App\Models\RequestPayment;
@@ -35,7 +34,8 @@ class SacramentRequestController extends AdminBaseController
     {
         $query = SacramentRequest::with([
             'user:id,first_name,last_name,email',
-            'assignedClergy:id,title,first_name,last_name',
+            'assignedClergy:id,first_name,last_name',
+            'assignedClergy.clergyProfile:user_id,title',
             'latestPayment',
         ]);
 
@@ -64,7 +64,11 @@ class SacramentRequestController extends AdminBaseController
                 'status'          => strtolower($req->status),
                 'clergy_status'   => $req->clergy_status ?? 'unassigned',
                 'payment_status'  => $req->latestPayment?->status ?? $req->payment_status ?? 'unpaid',
-                'assigned_clergy' => $req->assignedClergy?->full_name,
+                'assigned_clergy' => $req->assignedClergy
+                    ? ($req->assignedClergy->clergyProfile
+                        ? "{$req->assignedClergy->clergyProfile->title} {$req->assignedClergy->first_name} {$req->assignedClergy->last_name}"
+                        : $req->assignedClergy->full_name)
+                    : null,
                 'created_at'      => $req->created_at->format('M d, Y'),
             ]);
 
@@ -77,8 +81,10 @@ class SacramentRequestController extends AdminBaseController
         $sacramentRequest->load([
             'user:id,first_name,last_name,email,phone,city,barangay',
             'parish:id,name,city',
-            'assignedClergy:id,title,first_name,last_name,parish_id',
+            'assignedClergy:id,first_name,last_name',
+            'assignedClergy.clergyProfile:user_id,title,parish_id',
             'latestPayment',
+            'sacramentType:id,form_schema',
         ]);
 
         $payment = $sacramentRequest->latestPayment;
@@ -98,6 +104,10 @@ class SacramentRequestController extends AdminBaseController
             'clergy_status'   => $sacramentRequest->clergy_status ?? 'unassigned',
             'payment_status'  => $payment?->status ?? $sacramentRequest->payment_status ?? 'unpaid',
 
+            // field_schema: the ordered array of { id, label, type } from the form builder.
+            // The frontend uses this to map details keys (UIDs) → human labels.
+            'field_schema'    => $sacramentRequest->sacramentType?->form_schema['fields'] ?? [],
+
             'requester' => [
                 'name'     => $sacramentRequest->user?->full_name ?? 'Unknown',
                 'email'    => $sacramentRequest->user?->email ?? '—',
@@ -113,7 +123,9 @@ class SacramentRequestController extends AdminBaseController
 
             'assigned_clergy' => $sacramentRequest->assignedClergy ? [
                 'id'   => $sacramentRequest->assignedClergy->id,
-                'name' => $sacramentRequest->assignedClergy->full_name,
+                'name' => $sacramentRequest->assignedClergy->clergyProfile
+                    ? "{$sacramentRequest->assignedClergy->clergyProfile->title} {$sacramentRequest->assignedClergy->first_name} {$sacramentRequest->assignedClergy->last_name}"
+                    : $sacramentRequest->assignedClergy->full_name,
             ] : null,
 
             'payment' => $payment ? [
@@ -163,40 +175,55 @@ class SacramentRequestController extends AdminBaseController
     public function assignClergy(Request $request, SacramentRequest $sacramentRequest)
     {
         $validated = $request->validate([
-            'clergy_id' => 'required|integer|exists:clergy,id',
+            // clergy_id is now a users.id where role = 'clergymen'
+            'clergy_id' => [
+                'required',
+                'integer',
+                'exists:users,id',
+                function ($attr, $value, $fail) {
+                    $user = User::find($value);
+                    if (!$user || $user->role !== 'clergymen') {
+                        $fail('The selected user is not a clergy member.');
+                    }
+                    if ($user && $user->account_status !== 'Active') {
+                        $fail('The selected clergy member is not active.');
+                    }
+                },
+            ],
         ]);
 
-        $clergy = Clergy::findOrFail($validated['clergy_id']);
+        $clergyUser = User::with('clergyProfile')->findOrFail($validated['clergy_id']);
 
         $sacramentRequest->update([
-            'assigned_clergy_id' => $clergy->id,
+            'assigned_clergy_id' => $clergyUser->id,
             'clergy_status'      => 'pending',
         ]);
 
-        // Notify the clergy member (if they have a user account)
+        // Notify the clergy user directly — no email lookup needed
         try {
-            $clergyUser = User::where('email', $clergy->email)->first();
-            if ($clergyUser) {
-                Notification::insert([[
-                    'user_id'         => $clergyUser->id,
-                    'message'         => "You have been assigned to a {$sacramentRequest->sacrament_type} request on "
-                                        . optional($sacramentRequest->preferred_date)->format('F d, Y') . '.',
-                    'type'            => 'clergy_assignment',
-                    'is_read'         => false,
-                    'notifiable_type' => SacramentRequest::class,
-                    'notifiable_id'   => $sacramentRequest->id,
-                    'created_at'      => now(),
-                    'updated_at'      => now(),
-                ]]);
-            }
+            Notification::insert([[
+                'user_id'         => $clergyUser->id,
+                'message'         => "You have been assigned to a {$sacramentRequest->sacrament_type} request on "
+                                    . optional($sacramentRequest->preferred_date)->format('F d, Y') . '.',
+                'type'            => 'clergy_assignment',
+                'is_read'         => false,
+                'notifiable_type' => SacramentRequest::class,
+                'notifiable_id'   => $sacramentRequest->id,
+                'created_at'      => now(),
+                'updated_at'      => now(),
+            ]]);
         } catch (\Throwable $e) {
             Log::warning('assignClergy: notification failed', ['error' => $e->getMessage()]);
         }
 
+        $titledName = $clergyUser->clergyProfile
+            ? "{$clergyUser->clergyProfile->title} {$clergyUser->first_name} {$clergyUser->last_name}"
+            : $clergyUser->full_name;
+
         return response()->json([
             'assigned_clergy' => [
-                'id'   => $clergy->id,
-                'name' => $clergy->full_name,
+                'id'   => $clergyUser->id,
+                'name' => $titledName,
             ],
             'clergy_status' => 'pending',
         ]);
@@ -205,15 +232,17 @@ class SacramentRequestController extends AdminBaseController
     // ── Get available clergy list ──────────────────────────────
     public function availableClergy(SacramentRequest $sacramentRequest)
     {
-        $clergy = Clergy::where('status', 'active')
-            ->select('id', 'title', 'first_name', 'last_name', 'parish_id', 'specialization')
-            ->with('parish:id,name')
+        $clergy = User::where('role', 'clergymen')
+            ->where('account_status', 'Active')
+            ->with('clergyProfile.parish:id,name')
             ->get()
-            ->map(fn ($c) => [
-                'id'             => $c->id,
-                'name'           => $c->full_name,
-                'parish'         => $c->parish?->name ?? '—',
-                'specialization' => $c->specialization ?? '—',
+            ->map(fn ($u) => [
+                'id'             => $u->id,
+                'name'           => $u->clergyProfile
+                    ? "{$u->clergyProfile->title} {$u->first_name} {$u->last_name}"
+                    : $u->full_name,
+                'parish'         => $u->clergyProfile?->parish?->name ?? '—',
+                'specialization' => $u->clergyProfile?->specialization ?? '—',
             ]);
 
         return response()->json($clergy);

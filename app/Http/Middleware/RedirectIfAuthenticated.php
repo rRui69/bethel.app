@@ -16,10 +16,11 @@ class RedirectIfAuthenticated
             if (Auth::guard($guard)->check()) {
                 $user = Auth::guard($guard)->user();
 
-                // Route based on role
                 return match($user->role) {
-                    'super_admin', 'parish_admin', 'clergymen'
+                    'super_admin', 'parish_admin'
                         => redirect()->route('admin.dashboard'),
+                    'clergymen'
+                        => redirect()->route('admin.clergy-dashboard'),
                     default
                         => redirect()->route('home'),
                 };

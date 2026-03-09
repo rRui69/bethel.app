@@ -4,7 +4,6 @@ namespace Database\Seeders;
 
 use App\Models\Event;
 use App\Models\Parish;
-use App\Models\Clergy;
 use App\Models\User;
 use Illuminate\Database\Seeder;
 
@@ -13,17 +12,14 @@ class EventSeeder extends Seeder
     public function run(): void
     {
         $parishMap   = Parish::pluck('id', 'name');
-        $clergyMap   = Clergy::pluck('id', 'last_name');
         $parishioner = User::where('role', 'parishioner')->first();
-
+        $clergyMap = User::where('role', 'clergymen')
+            ->pluck('id', 'last_name');
+/* ══════════════════════════════════════════════════════════════
+    REGULAR EVENTS — shown on the public home page
+    Must be: type IN (Community, Liturgy, Youth) + status = Approved + event_date >= today
+══════════════════════════════════════════════════════════════ */
         $events = [
-
-            // ══════════════════════════════════════════════════════════════
-            // REGULAR EVENTS — shown on the public home page
-            // Must be: type IN (Community, Liturgy, Youth) + status=Approved
-            // + event_date >= today
-            // ══════════════════════════════════════════════════════════════
-
             // Liturgy
             [
                 'parish_id'   => $parishMap['St. Peter Parish'],

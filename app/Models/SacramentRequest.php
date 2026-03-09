@@ -42,7 +42,7 @@ class SacramentRequest extends Model
 
     public function assignedClergy(): BelongsTo
     {
-        return $this->belongsTo(Clergy::class, 'assigned_clergy_id');
+        return $this->belongsTo(User::class, 'assigned_clergy_id');
     }
 
     public function payments(): HasMany

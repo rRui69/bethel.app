@@ -43,9 +43,13 @@ class Event extends Model
         return $this->belongsTo(User::class);
     }
 
+    /**
+     * The clergy User assigned to this event.
+     * Points to users.id — clergy are now real User records.
+     */
     public function clergy()
     {
-        return $this->belongsTo(Clergy::class);
+        return $this->belongsTo(User::class, 'clergy_id');
     }
 
     // ── Scopes ─────────────────────────────────────────────

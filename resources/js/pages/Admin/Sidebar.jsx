@@ -1,9 +1,9 @@
 import React from 'react';
 import {
-    FaGauge, FaUsers, FaHandsPraying, FaCalendarDays,
-    FaBullhorn, FaShield, FaChurch, FaChevronLeft,
+    FaGauge, FaHandsPraying, FaCalendarDays,
+    FaBullhorn, FaChurch, FaChevronLeft,
     FaChevronRight, FaUserGear, FaWandMagicSparkles,
-    FaRightFromBracket,
+    FaRightFromBracket, FaPersonPraying, FaBookOpen,
 } from 'react-icons/fa6';
 
 const NAV_SECTIONS = [
@@ -16,7 +16,15 @@ const NAV_SECTIONS = [
                 icon:  FaGauge,
                 href:  '/admin/dashboard',
                 badge: null,
-                roles: ['super_admin', 'parish_admin', 'clergymen'],
+                roles: ['super_admin', 'parish_admin'],
+            },
+            {
+                id:    'clergy-dashboard',
+                label: 'My Assignments',
+                icon:  FaPersonPraying,
+                href:  '/admin/clergy-dashboard',
+                badge: null,
+                roles: ['clergymen'],
             },
         ],
     },
@@ -31,14 +39,14 @@ const NAV_SECTIONS = [
                 badge: null,
                 roles: ['super_admin'],
             },
-            /*{
-                id:    'parishioners',
-                label: 'Parishioners',
-                icon:  FaUsers,
-                href:  '/admin/parishioners',
+            {
+                id:    'clergy',
+                label: 'Clergy Management',
+                icon:  FaChurch,
+                href:  '/admin/clergy',
                 badge: null,
                 roles: ['super_admin'],
-            },*/
+            },
             {
                 id:    'sacrament-types',
                 label: 'Manage Sacraments',
@@ -73,12 +81,25 @@ const NAV_SECTIONS = [
             },
         ],
     },
-    // Future sections can be added here
+    {
+        section: 'My Ministry',
+        items: [
+            {
+                id:    'clergy-records',
+                label: 'Sacramental Records',
+                icon:  FaBookOpen,
+                href:  '/admin/clergy-dashboard',
+                badge: null,
+                roles: ['clergymen'],
+            },
+        ],
+    },
 ];
 
 function NavItem({ item, collapsed, stats }) {
     const { label, icon: Icon, href, badge } = item;
-    const isActive   = window.location.pathname === href;
+    const isActive   = window.location.pathname === href ||
+                       (href === '/admin/clergy-dashboard' && window.location.pathname === '/admin/clergy-dashboard');
     const badgeCount = badge === 'pending'
         ? (stats?.pending_sacrament_requests ?? 0)
         : 0;
@@ -129,7 +150,7 @@ export default function Sidebar({ collapsed, mobileOpen, onToggle, onMobileClose
     return (
         <aside className={sidebarClass}>
 
-            <a href="/admin/dashboard" className="sidebar-brand">
+            <a href={userRole === 'clergymen' ? '/admin/clergy-dashboard' : '/admin/dashboard'} className="sidebar-brand">
                 <div className="sidebar-brand__icon">
                     <FaChurch size={20} color="#1a3c5e" aria-hidden="true" />
                 </div>
@@ -154,7 +175,6 @@ export default function Sidebar({ collapsed, mobileOpen, onToggle, onMobileClose
             </nav>
 
             <div className="sidebar-footer">
-                {/* Logout — always visible in sidebar footer (critical on mobile) */}
                 <form method="POST" action="/logout" style={{ marginBottom: '0.5rem' }}>
                     <input
                         type="hidden"
@@ -174,7 +194,6 @@ export default function Sidebar({ collapsed, mobileOpen, onToggle, onMobileClose
                     </button>
                 </form>
 
-                {/* Desktop collapse toggle */}
                 <button
                     className="sidebar-collapse-btn"
                     onClick={onToggle}

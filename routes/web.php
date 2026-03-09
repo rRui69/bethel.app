@@ -12,8 +12,10 @@ use App\Http\Controllers\Admin\UserManagementController;
 use App\Http\Controllers\Admin\AnnouncementController;
 use App\Http\Controllers\Admin\EventController;
 use App\Http\Controllers\Admin\SacramentRequestController as AdminSacramentRequestController;
-use App\Http\Controllers\Admin\SacramentTypeController;
+use App\Http\Controllers\Admin\ClergyManagementController;
+use App\Http\Controllers\Admin\ClergyController;
 use App\Http\Controllers\SacramentController;
+use App\Http\Controllers\Admin\SacramentTypeController;
 
 Route::get('/', [HomeController::class, 'index'])->name('home');
 
@@ -31,7 +33,7 @@ Route::get('/contact',                     fn () => view('coming-soon'))->name('
 
 require __DIR__.'/auth.php';
 
-// ── Authenticated parishioner routes ───────────────────────────
+// Authenticated parishioner routes
 Route::middleware('auth')->group(function () {
 
     // Submit sacrament (must be before {slug} wildcard — handled via POST so no conflict)
@@ -71,7 +73,7 @@ Route::middleware('auth')->group(function () {
     });
 });
 
-// ── Admin routes ───────────────────────────────────────────────
+// Admin routes
 Route::prefix('admin')
     ->middleware(['auth', 'admin'])
     ->name('admin.')
@@ -87,6 +89,12 @@ Route::prefix('admin')
         Route::get('/sacraments',      [AdminSacramentRequestController::class,'page'])->name('sacraments');
         Route::get('/sacrament-types', [SacramentTypeController::class,        'page'])->name('sacrament-types');
         Route::get('/roles',           fn () => view('coming-soon'))->name('roles');
+
+        // Clergy Management (super_admin creates/manages clergy accounts)
+        Route::get('/clergy',           [ClergyManagementController::class, 'page'])->name('clergy');
+
+        // Clergy Dashboard (clergy members view their own assignments)
+        Route::get('/clergy-dashboard', [ClergyController::class,            'page'])->name('clergy-dashboard');
 
         Route::prefix('api')
             ->middleware('throttle:60,1')
@@ -140,5 +148,20 @@ Route::prefix('admin')
 
                 // Misc
                 Route::post('/notifications/read', [UserManagementController::class, 'markNotificationRead'])->name('notifications.read');
+
+                // Clergy Management
+                Route::get('/clergy/stats',                [ClergyManagementController::class, 'stats'])->name('clergy.stats');
+                Route::get('/clergy',                      [ClergyManagementController::class, 'index'])->name('clergy.index');
+                Route::post('/clergy',                     [ClergyManagementController::class, 'store'])->name('clergy.store');
+                Route::get('/clergy/{user}',               [ClergyManagementController::class, 'show'])->name('clergy.show');
+                Route::patch('/clergy/{user}',             [ClergyManagementController::class, 'update'])->name('clergy.update');
+                Route::delete('/clergy/{user}',            [ClergyManagementController::class, 'destroy'])->name('clergy.destroy');
+                Route::post('/clergy/{user}/reset-password',[ClergyManagementController::class, 'resetPassword'])->name('clergy.reset-password');
+
+                // Clergy Dashboard
+                Route::get('/clergy-profile',                              [ClergyController::class, 'myProfile'])->name('clergy-profile');
+                Route::get('/clergy-assignments',                          [ClergyController::class, 'assignments'])->name('clergy-assignments');
+                Route::post('/clergy-assignments/{sacramentRequest}/respond', [ClergyController::class, 'respond'])->name('clergy-assignments.respond');
+                Route::get('/clergy-records',                              [ClergyController::class, 'records'])->name('clergy-records');
             });
     });

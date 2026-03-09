@@ -5,7 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\Parish;
 use App\Models\Announcement;
 use App\Models\Event;
-use App\Models\Clergy;
+use App\Models\User;
 use Carbon\Carbon;
 
 class HomeController extends Controller
@@ -45,18 +45,15 @@ class HomeController extends Controller
             ->toArray();
 
         // Mass Schedules
-        // Pull from clergy schedules
-        // Each clergy has array { day, time, type } schedule entries.
-        // Attach the parish name for display.
-        $schedules = Clergy::with('parish:id,name,city')
-            ->where('status', 'Active')
-            ->whereNotNull('schedule')
+        // Clergy are now Users with role='clergymen'. Their schedule is in clergy_profiles.
+        $schedules = User::where('role', 'clergymen')
+            ->where('account_status', 'Active')
+            ->with(['clergyProfile' => fn ($q) => $q->whereNotNull('schedule')->with('parish:id,name,city')])
             ->get()
-            ->flatMap(function ($clergy) {
-                $raw   = $clergy->getRawOriginal('schedule');
-                $slots = is_array($clergy->schedule)
-                    ? $clergy->schedule
-                    : (json_decode($raw, true) ?? []);
+            ->filter(fn ($u) => $u->clergyProfile?->schedule)
+            ->flatMap(function ($user) {
+                $clergy  = $user->clergyProfile;
+                $slots   = $clergy->schedule ?? [];
 
                 return collect($slots)->map(fn ($slot) => [
                     'day'       => $slot['day']  ?? '',

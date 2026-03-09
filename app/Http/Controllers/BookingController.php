@@ -26,7 +26,8 @@ class BookingController extends Controller
         $query = SacramentRequest::where('user_id', Auth::id())
             ->with([
                 'parish:id,name,city',
-                'assignedClergy:id,title,first_name,last_name',
+                'assignedClergy:id,first_name,last_name',
+                'assignedClergy.clergyProfile:user_id,title',
                 // FIX: Do NOT use 'latestPayment:columns' shorthand with latestOfMany()
                 // The ofMany self-join needs aggregate columns the shorthand strips out → QueryException.
                 'latestPayment',
@@ -58,7 +59,11 @@ class BookingController extends Controller
                 'payment_status'  => $req->latestPayment?->status ?? $req->payment_status ?? 'unpaid',
                 'parish'          => $req->parish?->name ?? '—',
                 'parish_city'     => $req->parish?->city ?? '—',
-                'assigned_clergy' => $req->assignedClergy?->full_name,
+                'assigned_clergy' => $req->assignedClergy
+                    ? ($req->assignedClergy->clergyProfile
+                        ? "{$req->assignedClergy->clergyProfile->title} {$req->assignedClergy->first_name} {$req->assignedClergy->last_name}"
+                        : $req->assignedClergy->full_name)
+                    : null,
                 'submitted_at'    => $req->created_at->format('M d, Y'),
                 'has_payment'     => $req->latestPayment !== null,
                 'unread_messages' => (int) ($req->unread_messages ?? 0),
@@ -77,7 +82,8 @@ class BookingController extends Controller
 
         $sacramentRequest->load([
             'parish:id,name,city',
-            'assignedClergy:id,title,first_name,last_name',
+            'assignedClergy:id,first_name,last_name',
+                'assignedClergy.clergyProfile:user_id,title',
             'latestPayment',
         ]);
 
@@ -100,7 +106,9 @@ class BookingController extends Controller
 
             'assigned_clergy' => $sacramentRequest->assignedClergy ? [
                 'id'   => $sacramentRequest->assignedClergy->id,
-                'name' => $sacramentRequest->assignedClergy->full_name,
+                'name' => $sacramentRequest->assignedClergy->clergyProfile
+                    ? "{$sacramentRequest->assignedClergy->clergyProfile->title} {$sacramentRequest->assignedClergy->first_name} {$sacramentRequest->assignedClergy->last_name}"
+                    : $sacramentRequest->assignedClergy->full_name,
             ] : null,
 
             'payment' => $payment ? [
@@ -119,7 +127,7 @@ class BookingController extends Controller
         ]);
     }
 
-    // ── API: upload payment proof ──────────────────────────────
+    //upload payment proof 
     public function submitPayment(Request $request, SacramentRequest $sacramentRequest): JsonResponse
     {
         if ($sacramentRequest->user_id !== Auth::id()) {
@@ -186,17 +194,14 @@ class BookingController extends Controller
         ], 201);
     }
 
-    // ── API: clergy confirms/declines ─────────────────────────
+    // ── API: clergy confirms/declines 
     public function respondClergy(Request $request, SacramentRequest $sacramentRequest): JsonResponse
     {
-        // Only the assigned clergy's linked user account can respond
-        if ($sacramentRequest->user_id !== Auth::id()) {
-            // Also allow if auth user email matches assigned clergy email
-            $clergy = $sacramentRequest->assignedClergy;
-            $user   = Auth::user();
-            if (!$clergy || $clergy->email !== $user->email) {
-                return response()->json(['message' => 'Forbidden.'], 403);
-            }
+        $user = Auth::user();
+
+        // Clean ownership check: assigned_clergy_id now IS the user's ID
+        if ((int) $sacramentRequest->assigned_clergy_id !== $user->id) {
+            return response()->json(['message' => 'Forbidden. You are not assigned to this request.'], 403);
         }
 
         $validated = $request->validate([
@@ -207,9 +212,9 @@ class BookingController extends Controller
 
         // Notify admins
         try {
-            $clergy    = $sacramentRequest->assignedClergy;
-            $clergyName = $clergy?->full_name ?? Auth::user()->full_name;
-            $adminIds   = \App\Models\User::whereIn('role', ['super_admin', 'parish_admin'])->pluck('id');
+            $user->load('clergyProfile');
+            $clergyName = $user->titled_name;
+            $adminIds   = User::whereIn('role', ['super_admin', 'parish_admin'])->pluck('id');
             $msgs       = $adminIds->map(fn ($id) => [
                 'user_id'         => $id,
                 'message'         => "{$clergyName} has {$validated['response']} the assignment for a {$sacramentRequest->sacrament_type} request.",

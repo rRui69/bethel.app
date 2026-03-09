@@ -4,7 +4,7 @@ namespace App\Http\Controllers\Admin;
 
 use App\Models\Event;
 use App\Models\Parish;
-use App\Models\Clergy;
+use App\Models\User;
 use Carbon\Carbon;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -20,15 +20,31 @@ class EventController extends AdminBaseController
 
         // Scope dropdowns based on role
         $parishQuery = Parish::active()->select('id', 'name', 'city')->orderBy('name');
-        $clergyQuery = Clergy::where('status', 'Active')->with('parish:id,name')->select('id', 'parish_id', 'title', 'first_name', 'last_name')->orderBy('last_name');
+
+        // Clergy are now real Users — query by role instead of the retired clergy table
+        $clergyQuery = User::where('role', 'clergymen')
+            ->where('account_status', 'Active')
+            ->with('clergyProfile.parish:id,name')
+            ->orderBy('last_name');
 
         if (!$user->isSuperAdmin()) {
             $parishQuery->where('id', $user->parish_id);
             $clergyQuery->where('parish_id', $user->parish_id);
         }
 
-        $adminData['parishes'] = $parishQuery->get()->map(fn ($p) => ['id' => $p->id, 'name' => $p->name, 'city' => $p->city])->toArray();
-        $adminData['clergy'] = $clergyQuery->get()->map(fn ($c) => ['id' => $c->id, 'name' => $c->full_name, 'parish' => $c->parish?->name])->toArray();
+        $adminData['parishes'] = $parishQuery->get()
+            ->map(fn ($p) => ['id' => $p->id, 'name' => $p->name, 'city' => $p->city])
+            ->toArray();
+
+        $adminData['clergy'] = $clergyQuery->get()
+            ->map(fn ($u) => [
+                'id'     => $u->id,
+                'name'   => $u->clergyProfile
+                    ? "{$u->clergyProfile->title} {$u->first_name} {$u->last_name}"
+                    : $u->full_name,
+                'parish' => $u->clergyProfile?->parish?->name ?? '—',
+            ])
+            ->toArray();
 
         return view('admin.events', compact('adminData'));
     }
@@ -57,7 +73,11 @@ class EventController extends AdminBaseController
     {
         $user = auth()->user();
         $query = Event::regular()
-            ->with(['parish:id,name', 'clergy:id,title,first_name,last_name'])
+            ->with([
+                'parish:id,name',
+                'clergy:id,first_name,last_name',
+                'clergy.clergyProfile:user_id,title',
+            ])
             ->select('id', 'parish_id', 'clergy_id', 'title', 'type', 'event_date', 'start_time', 'end_time', 'location', 'status', 'created_at');
 
         // SECURITY: Tenant Isolation
@@ -90,7 +110,11 @@ class EventController extends AdminBaseController
     public function show(Event $event): JsonResponse
     {
         Gate::authorize('view', $event);
-        $event->load(['parish:id,name', 'clergy:id,title,first_name,last_name']);
+        $event->load([
+            'parish:id,name',
+            'clergy:id,first_name,last_name',
+            'clergy.clergyProfile:user_id,title',
+        ]);
         return response()->json($this->formatRow($event, true));
     }
 
@@ -100,7 +124,7 @@ class EventController extends AdminBaseController
 
         $validated = $request->validate([
             'parish_id'   => ['required', 'integer', 'exists:parishes,id'],
-            'clergy_id'   => ['nullable', 'integer', 'exists:clergy,id'],
+            'clergy_id'   => ['nullable', 'integer', 'exists:users,id'],
             'title'       => ['required', 'string', 'max:255'],
             'description' => ['nullable', 'string'],
             'type'        => ['required', Rule::in(Event::REGULAR_TYPES)],
@@ -111,15 +135,27 @@ class EventController extends AdminBaseController
             'status'      => ['required', Rule::in(['Pending', 'Approved', 'Rejected', 'Completed', 'Cancelled'])],
         ]);
 
+        // Validate clergy_id is actually a clergymen if provided
+        if (!empty($validated['clergy_id'])) {
+            $clergyUser = User::find($validated['clergy_id']);
+            if (!$clergyUser || $clergyUser->role !== 'clergymen') {
+                return response()->json(['message' => 'Invalid clergy selection.'], 422);
+            }
+        }
+
         // SECURITY: Force parish_id to the admin's parish to prevent payload spoofing
         if (!$user->isSuperAdmin()) {
             $validated['parish_id'] = $user->parish_id;
         }
 
-        $validated['user_id'] = $user->id; // Track who created it
+        $validated['user_id'] = $user->id;
 
         $event = Event::create($validated);
-        $event->load(['parish:id,name', 'clergy:id,title,first_name,last_name']);
+        $event->load([
+            'parish:id,name',
+            'clergy:id,first_name,last_name',
+            'clergy.clergyProfile:user_id,title',
+        ]);
 
         return response()->json([
             'message' => 'Event created successfully.',
@@ -131,7 +167,7 @@ class EventController extends AdminBaseController
     {
         Gate::authorize('update', $event);
         $validated = $request->validate([
-            'clergy_id'   => ['nullable', 'integer', 'exists:clergy,id'],
+            'clergy_id'   => ['nullable', 'integer', 'exists:users,id'],
             'title'       => ['sometimes', 'string', 'max:255'],
             'description' => ['nullable', 'string'],
             'type'        => ['sometimes', Rule::in(Event::REGULAR_TYPES)],
@@ -143,7 +179,11 @@ class EventController extends AdminBaseController
         ]);
 
         $event->update($validated);
-        $event->load(['parish:id,name', 'clergy:id,title,first_name,last_name']);
+        $event->load([
+            'parish:id,name',
+            'clergy:id,first_name,last_name',
+            'clergy.clergyProfile:user_id,title',
+        ]);
 
         return response()->json([
             'message' => 'Event updated successfully.',
@@ -160,12 +200,21 @@ class EventController extends AdminBaseController
 
     private function formatRow(Event $e, bool $withFull = false): array
     {
+        // Build titled clergy name from the now-User relationship
+        $clergyName = 'Unassigned';
+        if ($e->clergy) {
+            $profile = $e->clergy->clergyProfile;
+            $clergyName = $profile
+                ? "{$profile->title} {$e->clergy->first_name} {$e->clergy->last_name}"
+                : $e->clergy->full_name;
+        }
+
         $row = [
             'id'          => $e->id,
             'parish_id'   => $e->parish_id,
             'parish'      => $e->parish?->name ?? '—',
             'clergy_id'   => $e->clergy_id,
-            'clergy'      => $e->clergy?->full_name ?? 'Unassigned',
+            'clergy'      => $clergyName,
             'title'       => $e->title,
             'type'        => $e->type,
             'event_date'  => $e->event_date->format('Y-m-d'),
