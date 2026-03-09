@@ -17,6 +17,7 @@ use App\Http\Controllers\Admin\ClergyController;
 use App\Http\Controllers\Admin\MassScheduleController as AdminMassScheduleController;
 use App\Http\Controllers\MassScheduleController;
 use App\Http\Controllers\SacramentController;
+use App\Http\Controllers\Admin\SacramentTypeController;
 
 Route::get('/', [HomeController::class, 'index'])->name('home');
 
