@@ -277,6 +277,7 @@ class SacramentRequestController extends AdminBaseController
             ->map(fn ($m) => [
                 'id'        => $m->id,
                 'body'      => $m->body,
+                'image_url' => $m->image_url,
                 'sender'    => $m->sender?->full_name ?? 'Unknown',
                 'role'      => $m->sender?->role ?? 'unknown',
                 'sender_id' => $m->sender_id,
@@ -290,14 +291,20 @@ class SacramentRequestController extends AdminBaseController
     public function sendMessage(Request $request, SacramentRequest $sacramentRequest)
     {
         $validated = $request->validate([
-            'body' => 'required|string|max:2000',
+            'body'      => 'nullable|string|max:2000',
+            'image_url' => 'nullable|url|max:1000',
         ]);
+
+        if (empty($validated['body']) && empty($validated['image_url'])) {
+            return response()->json(['message' => 'Message or image is required.'], 422);
+        }
 
         $message = RequestMessage::create([
             'sacrament_request_id' => $sacramentRequest->id,
             'sender_id'            => Auth::id(),
-            'body'                 => $validated['body'],
-            'read_by_admin'        => true,   // admin sent it — already "read"
+            'body'                 => $validated['body'] ?? '',
+            'image_url'            => $validated['image_url'] ?? null,
+            'read_by_admin'        => true,
             'read_by_parishioner'  => false,
         ]);
 
@@ -323,6 +330,7 @@ class SacramentRequestController extends AdminBaseController
         return response()->json([
             'id'        => $message->id,
             'body'      => $message->body,
+            'image_url' => $message->image_url,
             'sender'    => $message->sender?->full_name,
             'role'      => $message->sender?->role,
             'sender_id' => $message->sender_id,

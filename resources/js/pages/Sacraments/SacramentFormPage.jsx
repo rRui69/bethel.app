@@ -1,4 +1,5 @@
 import React, { useState, useCallback, useEffect } from 'react';
+import { useCloudinaryUpload } from '@/hooks/useCloudinaryUpload';
 import ICON_MAP from '@/config/iconMap';
 import {
     FaHandsPraying, FaChurch, FaUser, FaPhone, FaCalendarDays,
@@ -278,15 +279,17 @@ export default function SacramentFormPage({
     // ── Dynamic field state ───────────────────────────────────
     const customFields = sacramentType?.form_schema?.fields ?? [];
     const [details,     setDetails]     = useState({});
-    const [fileDetails, setFileDetails] = useState({}); // field_id -> File object
+    const [fileObjects, setFileObjects] = useState({}); // field_id -> File object (pre-upload)
+    const { upload: uploadDoc }         = useCloudinaryUpload();
 
     const handleDetail = useCallback((id, val) => {
         setDetails(prev => ({ ...prev, [id]: val }));
     }, []);
 
     const handleFileDetail = useCallback((id, file) => {
-        setFileDetails(prev => ({ ...prev, [id]: file }));
-        setDetails(prev => ({ ...prev, [id]: file?.name ?? '' })); // show filename in UI
+        // file is a File object from the input; store it and show filename in UI
+        setFileObjects(prev => ({ ...prev, [id]: file }));
+        setDetails(prev => ({ ...prev, [id]: file?.name ?? '' }));
     }, []);
 
     // ── UI state ──────────────────────────────────────────────
@@ -336,51 +339,38 @@ export default function SacramentFormPage({
         try {
             const csrfToken = document.querySelector('meta[name="csrf-token"]')?.content;
 
-            // Use FormData when file attachments exist so files are multipart-uploaded
-            const hasFiles = Object.keys(fileDetails).length > 0;
-            let res;
-
-            if (hasFiles) {
-                const fd = new FormData();
-                fd.append('sacrament_type_id', sacramentType.id);
-                fd.append('parish_id',         parseInt(parishId));
-                fd.append('preferred_date',     preferredDate);
-                fd.append('preferred_time',     preferredTime);
-                fd.append('participants',        parseInt(participants));
-
-                // Append each text detail field
-                Object.entries(details).forEach(([k, v]) => {
-                    if (typeof v !== 'object') fd.append(`details[${k}]`, v ?? '');
-                });
-
-                // Append file fields separately as files[]
-                Object.entries(fileDetails).forEach(([k, file]) => {
-                    if (file instanceof File) fd.append(`files[${k}]`, file);
-                });
-
-                res = await fetch('/sacraments/submit', {
-                    method:  'POST',
-                    headers: { 'Accept': 'application/json', 'X-CSRF-TOKEN': csrfToken },
-                    body:    fd,
-                });
-            } else {
-                res = await fetch('/sacraments/submit', {
-                    method:  'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'Accept':       'application/json',
-                        'X-CSRF-TOKEN': csrfToken,
-                    },
-                    body: JSON.stringify({
-                        sacrament_type_id: sacramentType.id,
-                        parish_id:         parseInt(parishId),
-                        preferred_date:    preferredDate,
-                        preferred_time:    preferredTime,
-                        participants:      parseInt(participants),
-                        details,
-                    }),
-                });
+            // Step 1: Upload any File objects directly to Cloudinary from browser
+            const resolvedDetails = { ...details };
+            const fileEntries = Object.entries(fileObjects);
+            for (const [fieldId, file] of fileEntries) {
+                if (!(file instanceof File)) continue;
+                try {
+                    const url = await uploadDoc(file, 'bethel_app/documents');
+                    resolvedDetails[fieldId] = url; // replace filename with Cloudinary URL
+                } catch (uploadErr) {
+                    setServerError(`Document upload failed: ${uploadErr.message}`);
+                    setSubmitting(false);
+                    return;
+                }
             }
+
+            // Step 2: Send JSON (all file fields are now URLs)
+            const res = await fetch('/sacraments/submit', {
+                method:  'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Accept':       'application/json',
+                    'X-CSRF-TOKEN': csrfToken,
+                },
+                body: JSON.stringify({
+                    sacrament_type_id: sacramentType.id,
+                    parish_id:         parseInt(parishId),
+                    preferred_date:    preferredDate,
+                    preferred_time:    preferredTime,
+                    participants:      parseInt(participants),
+                    details:           resolvedDetails,
+                }),
+            });
 
             const data = await res.json();
 

@@ -1,3 +1,4 @@
+import { useCloudinaryUpload } from '@/hooks/useCloudinaryUpload';
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import {
     FaHandsPraying, FaCalendarDays, FaClock, FaUsers, FaChurch,
@@ -47,9 +48,10 @@ function humanize(key) {
 function MessageThread({ requestId, onClose }) {
     const [messages, setMessages] = useState([]);
     const [body,     setBody]     = useState('');
-    const [msgImage, setMsgImage] = useState(null);  // File object for image attachment
+    const [msgImage, setMsgImage] = useState(null);
     const [sending,  setSending]  = useState(false);
     const imageInputRef = useRef(null);
+    const { upload: uploadImage } = useCloudinaryUpload();
     const [loading,  setLoading]  = useState(true);
     const bottomRef    = useRef(null);
     const scrollBoxRef = useRef(null);
@@ -94,23 +96,22 @@ function MessageThread({ requestId, onClose }) {
         setSending(true);
         try {
             const csrf = document.querySelector('meta[name="csrf-token"]')?.content;
-            let res;
+
+            // If image attached: upload to Cloudinary first, then send secure_url to Laravel
+            let imageUrl = null;
             if (msgImage) {
-                const fd = new FormData();
-                if (body.trim()) fd.append('body', body.trim());
-                fd.append('image', msgImage);
-                res = await fetch(`/api/bookings/${requestId}/messages`, {
-                    method: 'POST',
-                    headers: { 'X-CSRF-TOKEN': csrf },
-                    body: fd,
-                });
-            } else {
-                res = await fetch(`/api/bookings/${requestId}/messages`, {
-                    method:  'POST',
-                    headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': csrf },
-                    body:    JSON.stringify({ body: body.trim() }),
-                });
+                imageUrl = await uploadImage(msgImage, 'bethel_app/messages');
             }
+
+            const res = await fetch(`/api/bookings/${requestId}/messages`, {
+                method:  'POST',
+                headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': csrf },
+                body:    JSON.stringify({
+                    body:      body.trim() || null,
+                    image_url: imageUrl,
+                }),
+            });
+
             const msg = await res.json();
             if (res.ok) {
                 setMessages(prev => [...prev, msg]);
@@ -118,8 +119,11 @@ function MessageThread({ requestId, onClose }) {
                 setMsgImage(null);
                 if (imageInputRef.current) imageInputRef.current.value = '';
             }
-        } catch {}
-        finally { setSending(false); }
+        } catch (err) {
+            console.error('Send failed:', err);
+        } finally {
+            setSending(false);
+        }
     };
 
     return (
@@ -270,6 +274,7 @@ function PaymentModal({ requestId, sacramentType, onClose, onSuccess }) {
     const [preview,   setPreview]   = useState(null);
     const [submitting,setSubmitting]= useState(false);
     const [error,     setError]     = useState(null);
+    const { upload: uploadToCloud } = useCloudinaryUpload();
 
     const handleFile = e => {
         const f = e.target.files[0];
@@ -284,21 +289,39 @@ function PaymentModal({ requestId, sacramentType, onClose, onSuccess }) {
         if (!file) { setError('Please upload proof of payment.'); return; }
         setSubmitting(true); setError(null);
         try {
-            const fd = new FormData();
-            fd.append('method', method);
-            if (amount) fd.append('amount', amount);
-            fd.append('proof', file);
+            // Step 1: Upload proof image directly to Cloudinary from browser
+            let proofUrl;
+            try {
+                proofUrl = await uploadToCloud(file, 'bethel_app/payments');
+            } catch (uploadErr) {
+                setError('Image upload failed: ' + uploadErr.message);
+                return;
+            }
 
+            // Step 2: Send the secure URL to Laravel (no file transfer to server)
             const res = await fetch(`/api/bookings/${requestId}/payment`, {
                 method:  'POST',
-                headers: { 'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.content },
-                body:    fd,
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.content,
+                },
+                body: JSON.stringify({
+                    method,
+                    amount:    amount || null,
+                    proof_url: proofUrl,
+                }),
             });
-            const data = await res.json();
-            if (!res.ok) { setError(data.message ?? 'Upload failed.'); return; }
+            // Safe parse — server might return HTML on fatal errors
+            const text = await res.text();
+            let data = {};
+            try { data = JSON.parse(text); } catch { /* HTML error page */ }
+            if (!res.ok) { setError(data.message ?? `Server error (${res.status}). Please try again.`); return; }
             onSuccess();
-        } catch { setError('Network error. Try again.'); }
-        finally  { setSubmitting(false); }
+        } catch (err) {
+            setError('Upload failed: ' + err.message);
+        } finally {
+            setSubmitting(false);
+        }
     };
 
     return (

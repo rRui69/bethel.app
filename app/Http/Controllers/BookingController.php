@@ -10,7 +10,6 @@ use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Log;
-use App\Services\CloudinaryUploader;
 use Illuminate\Support\Facades\Storage;
 
 class BookingController extends Controller
@@ -110,7 +109,9 @@ class BookingController extends Controller
                 'amount'     => $payment->amount,
                 'status'     => $payment->status,
                 'proof_url'  => $payment->proof_path
-                                    ? CloudinaryUploader::resolveUrl($payment->proof_path)
+                                    ? (str_starts_with($payment->proof_path, 'http')
+                                        ? $payment->proof_path
+                                        : \Illuminate\Support\Facades\Storage::disk('public')->url($payment->proof_path))
                                     : null,
                 'admin_notes'=> $payment->admin_notes,
                 'submitted'  => $payment->created_at->format('M d, Y'),
@@ -126,23 +127,13 @@ class BookingController extends Controller
         }
 
         $validated = $request->validate([
-            'method' => 'required|in:gcash,bank_transfer,cash,other',
-            'amount' => 'nullable|numeric|min:0|max:99999',
-            'proof'  => 'required|file|mimes:jpg,jpeg,png,webp,pdf|max:5120', // 5MB
+            'method'    => 'required|in:gcash,bank_transfer,cash,other',
+            'amount'    => 'nullable|numeric|min:0|max:99999',
+            // Browser uploads file directly to Cloudinary and sends back the secure URL
+            'proof_url' => 'required|url|max:1000',
         ]);
 
-        // Upload proof via CloudinaryUploader service (falls back to local disk in dev)
-        try {
-            $path = CloudinaryUploader::upload(
-                $request->file('proof'),
-                'bethel_app/payments',
-                'public',
-                'payments'
-            );
-        } catch (\RuntimeException $e) {
-            return response()->json(['message' => $e->getMessage()], 500);
-        }
-        $proofUrl = $path;
+        $proofUrl = $validated['proof_url'];
 
         // Upsert — replace if previously rejected, create if first time
         $existing = $sacramentRequest->latestPayment;
@@ -150,7 +141,7 @@ class BookingController extends Controller
             $existing->update([
                 'method'     => $validated['method'],
                 'amount'     => $validated['amount'] ?? null,
-                'proof_path' => $path,
+                'proof_path' => $proofUrl,
                 'status'     => 'submitted',
                 'admin_notes'=> null,
                 'verified_at'=> null,
@@ -275,34 +266,20 @@ class BookingController extends Controller
         }
 
         $validated = $request->validate([
-            'body'  => 'nullable|string|max:2000',
-            'image' => 'nullable|file|mimes:jpg,jpeg,png,webp,gif|max:5120',
+            'body'      => 'nullable|string|max:2000',
+            // Browser uploads image directly to Cloudinary; server receives the URL only
+            'image_url' => 'nullable|url|max:1000',
         ]);
 
-        // At least one of body or image must be present
-        if (empty($validated['body']) && !$request->hasFile('image')) {
+        if (empty($validated['body']) && empty($validated['image_url'])) {
             return response()->json(['message' => 'Message body or image is required.'], 422);
-        }
-
-        $imageUrl = null;
-        if ($request->hasFile('image')) {
-            try {
-                $imageUrl = CloudinaryUploader::upload(
-                    $request->file('image'),
-                    'bethel_app/messages',
-                    'public',
-                    'messages'
-                );
-            } catch (\RuntimeException $e) {
-                return response()->json(['message' => $e->getMessage()], 500);
-            }
         }
 
         $message = RequestMessage::create([
             'sacrament_request_id' => $sacramentRequest->id,
             'sender_id'            => Auth::id(),
             'body'                 => $validated['body'] ?? '',
-            'image_url'            => $imageUrl,
+            'image_url'            => $validated['image_url'] ?? null,
             'read_by_admin'        => false,
             'read_by_parishioner'  => true,
         ]);

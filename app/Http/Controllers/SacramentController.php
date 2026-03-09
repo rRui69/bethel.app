@@ -11,7 +11,6 @@ use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
-use App\Services\CloudinaryUploader;
 use Illuminate\Support\Facades\Log;
 
 class SacramentController extends Controller
@@ -92,37 +91,13 @@ class SacramentController extends Controller
             'preferred_date'    => 'required|date|after_or_equal:today',
             'preferred_time'    => 'required|string|max:10',
             'participants'      => 'required|integer|min:1|max:500',
+            // details may contain Cloudinary URLs for file fields (uploaded client-side)
             'details'           => 'nullable|array',
-            // Accept any uploaded files for document fields (e.g. birth certificate)
-            'files'             => 'nullable|array',
-            'files.*'           => 'nullable|file|mimes:jpg,jpeg,png,webp,pdf|max:10240',
+            'details.*'         => 'nullable|string|max:1000',
         ]);
 
-        $type = SacramentType::findOrFail($validated['sacrament_type_id']);
-
-        // ── Upload any document files (birth cert, marriage cert, etc.) ──
-        // files[] is a map of field_id => UploadedFile from the form schema
+        $type    = SacramentType::findOrFail($validated['sacrament_type_id']);
         $details = $validated['details'] ?? [];
-
-        if ($request->hasFile('files')) {
-            foreach ($request->file('files') as $fieldId => $uploadedFile) {
-                try {
-                    $url = CloudinaryUploader::upload(
-                        $uploadedFile,
-                        'bethel_app/documents',
-                        'public',
-                        'documents'
-                    );
-                    $details[$fieldId] = $url; // overwrite filename-only value with real URL
-                } catch (\RuntimeException $e) {
-                    Log::warning('SacramentController@submit: document upload failed', [
-                        'field' => $fieldId,
-                        'error' => $e->getMessage(),
-                    ]);
-                    // Non-fatal — keep the filename text if upload fails
-                }
-            }
-        }
 
         // ── Save the request ──────────────────────────────────────
         $sacramentRequest = SacramentRequest::create([

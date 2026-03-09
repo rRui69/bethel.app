@@ -1,7 +1,8 @@
+import { useCloudinaryUpload } from '@/hooks/useCloudinaryUpload';
 import React, { useState, useEffect, useMemo, useRef, useCallback } from 'react';
 import {
     FaCheck, FaXmark, FaMagnifyingGlass, FaX, FaPersonPraying,
-    FaCreditCard, FaComment, FaPaperPlane, FaSpinner, FaChevronDown,
+    FaCreditCard, FaComment, FaPaperPlane, FaSpinner, FaChevronDown, FaPaperclip, FaUpRightFromSquare,
 } from 'react-icons/fa6';
 
 // ── Status Badge ───────────────────────────────────────────────
@@ -92,14 +93,17 @@ function AssignClergyPanel({ requestId, current, onAssigned }) {
 
 // ── Message Panel (inside modal) ──────────────────────────────
 function MessagePanel({ requestId }) {
-    const [messages, setMessages] = useState([]);
-    const [body,     setBody]     = useState('');
-    const [sending,  setSending]  = useState(false);
-    const [loading,  setLoading]  = useState(true);
+    const [messages,  setMessages]  = useState([]);
+    const [body,      setBody]      = useState('');
+    const [msgImage,  setMsgImage]  = useState(null);
+    const [sending,   setSending]   = useState(false);
+    const [loading,   setLoading]   = useState(true);
     const bottomRef    = useRef(null);
     const scrollBoxRef = useRef(null);
+    const imageInputRef = useRef(null);
     const pollRef      = useRef(null);
     const authId = window.__PAGE_DATA__?.authId ?? null;
+    const { upload: uploadImage } = useCloudinaryUpload();
 
     const isNearBottom = () => {
         const el = scrollBoxRef.current;
@@ -134,13 +138,22 @@ function MessagePanel({ requestId }) {
     }, [messages]);
 
     const send = async () => {
-        if (!body.trim()) return;
+        if (!body.trim() && !msgImage) return;
         setSending(true);
         try {
-            const r = await axios.post(`/admin/api/sacrament-requests/${requestId}/messages`, { body: body.trim() });
+            let imageUrl = null;
+            if (msgImage) {
+                imageUrl = await uploadImage(msgImage, 'bethel_app/messages');
+            }
+            const r = await axios.post(`/admin/api/sacrament-requests/${requestId}/messages`, {
+                body:      body.trim() || null,
+                image_url: imageUrl,
+            });
             setMessages(prev => [...prev, r.data]);
             setBody('');
-        } catch { alert('Failed to send.'); }
+            setMsgImage(null);
+            if (imageInputRef.current) imageInputRef.current.value = '';
+        } catch (err) { alert('Failed to send: ' + (err.message ?? 'unknown error')); }
         finally { setSending(false); }
     };
 
@@ -191,24 +204,39 @@ function MessagePanel({ requestId }) {
                 )}
                 <div ref={bottomRef} />
             </div>
-            <div style={{ display: 'flex', gap: 8, marginTop: 6 }}>
-                <textarea
-                    rows={2}
-                    value={body}
-                    onChange={e => setBody(e.target.value)}
-                    onKeyDown={e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); send(); } }}
-                    placeholder="Reply to parishioner…"
-                    className="um-input"
-                    style={{ flex: 1, resize: 'none', fontSize: '0.82rem', padding: '0.45rem 0.7rem', fontFamily: 'inherit' }}
-                />
-                <button
-                    className="um-btn um-btn--primary"
-                    onClick={send}
-                    disabled={sending || !body.trim()}
-                    style={{ padding: '0.4rem 0.8rem', display: 'flex', alignItems: 'center', gap: 5 }}
-                >
-                    {sending ? <FaSpinner size={11} /> : <FaPaperPlane size={11} />}
-                </button>
+            <div style={{ marginTop: 6 }}>
+                {msgImage && (
+                    <div style={{ marginBottom: 6, padding: '0.35rem 0.6rem',
+                        background: '#f0f9ff', borderRadius: 6, fontSize: '0.75rem', color: '#0369a1',
+                        display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                        <span>📎 {msgImage.name}</span>
+                        <button onClick={() => { setMsgImage(null); if (imageInputRef.current) imageInputRef.current.value = ''; }}
+                            style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#999' }}>
+                            <FaX size={9} />
+                        </button>
+                    </div>
+                )}
+                <div style={{ display: 'flex', gap: 6 }}>
+                    <textarea rows={2} value={body}
+                        onChange={e => setBody(e.target.value)}
+                        onKeyDown={e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); send(); } }}
+                        placeholder="Reply to parishioner…"
+                        className="um-input"
+                        style={{ flex: 1, resize: 'none', fontSize: '0.82rem', padding: '0.45rem 0.7rem', fontFamily: 'inherit' }} />
+                    <button onClick={() => imageInputRef.current?.click()} title="Attach image"
+                        style={{ background: msgImage ? '#dbeafe' : '#f1f5f9', border: '1px solid #e5e7eb',
+                            borderRadius: 8, padding: '0 0.6rem', cursor: 'pointer', color: msgImage ? '#2563eb' : '#888' }}>
+                        <FaPaperclip size={12} />
+                    </button>
+                    <input ref={imageInputRef} type="file" accept="image/*" style={{ display: 'none' }}
+                        onChange={e => setMsgImage(e.target.files[0] ?? null)} />
+                    <button className="um-btn um-btn--primary" onClick={send}
+                        disabled={sending || (!body.trim() && !msgImage)}
+                        style={{ padding: '0.4rem 0.8rem', display: 'flex', alignItems: 'center', gap: 5,
+                            opacity: (!body.trim() && !msgImage) ? 0.5 : 1 }}>
+                        {sending ? <FaSpinner size={11} /> : <FaPaperPlane size={11} />}
+                    </button>
+                </div>
             </div>
         </div>
     );
@@ -235,14 +263,26 @@ function PaymentVerifyPanel({ requestId, payment, onVerified }) {
     return (
         <div>
             {payment.proof_url && (
-                <div style={{ marginBottom: '0.75rem' }}>
+                <div style={{ marginBottom: '0.75rem', padding: '0.75rem',
+                    background: '#f8fafc', borderRadius: 10, border: '1px solid #e5e7eb' }}>
                     <a href={payment.proof_url} target="_blank" rel="noreferrer">
-                        <img src={payment.proof_url} alt="Proof"
-                            style={{ maxHeight: 140, borderRadius: 8, border: '1px solid var(--border-color)', objectFit: 'contain' }} />
+                        <img src={payment.proof_url} alt="Payment Proof"
+                            style={{ width: '100%', maxHeight: 180, borderRadius: 8,
+                                objectFit: 'contain', display: 'block', cursor: 'zoom-in',
+                                background: '#fff', border: '1px solid #e5e7eb' }} />
                     </a>
-                    <p style={{ fontSize: '0.75rem', color: '#9ca3af', margin: '4px 0 0' }}>
-                        {payment.method?.toUpperCase()} · {payment.amount ? `₱${payment.amount}` : 'Amount not specified'} · Submitted {payment.submitted}
-                    </p>
+                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginTop: 8 }}>
+                        <p style={{ fontSize: '0.72rem', color: '#9ca3af', margin: 0 }}>
+                            {payment.method?.toUpperCase()} · {payment.amount ? `₱${payment.amount}` : 'Amount not specified'} · {payment.submitted}
+                        </p>
+                        <a href={payment.proof_url} target="_blank" rel="noreferrer"
+                            style={{ display: 'inline-flex', alignItems: 'center', gap: 4,
+                                fontSize: '0.72rem', color: '#2563eb', fontWeight: 600,
+                                textDecoration: 'none', padding: '3px 8px',
+                                background: '#eff6ff', borderRadius: 6 }}>
+                            <FaUpRightFromSquare size={9} /> View Full Image
+                        </a>
+                    </div>
                 </div>
             )}
             <textarea
