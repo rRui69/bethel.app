@@ -13,8 +13,7 @@ use Illuminate\Validation\Rule;
 
 class MassScheduleController extends AdminBaseController
 {
-    // ── Blade page ────────────────────────────────────────────────
-
+    // Blade page
     public function page()
     {
         $adminData = $this->adminShellData();
@@ -43,7 +42,7 @@ class MassScheduleController extends AdminBaseController
         return view('admin.mass-schedules', compact('adminData'));
     }
 
-    // ── API: list ─────────────────────────────────────────────────
+    // API: list
 
     public function index(Request $request): JsonResponse
     {
@@ -78,7 +77,7 @@ class MassScheduleController extends AdminBaseController
         return response()->json($schedules);
     }
 
-    // ── API: store ────────────────────────────────────────────────
+    // API: store
 
     public function store(Request $request): JsonResponse
     {

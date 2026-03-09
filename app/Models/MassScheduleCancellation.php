@@ -7,6 +7,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class MassScheduleCancellation extends Model
 {
+    protected $table = 'mass_cancellations';
     protected $fillable = [
         'mass_schedule_id',
         'cancelled_date',

@@ -25,7 +25,7 @@ Route::get('/', [HomeController::class, 'index'])->name('home');
 Route::get('/api/sacrament-types', [SacramentTypeController::class, 'publicIndex'])->name('api.sacrament-types.public');
 
 Route::get('/mass-schedule',             [MassScheduleController::class, 'index'])->name('mass-schedule');
-Route::get('/api/mass-schedules/public', [MassScheduleController::class, 'public'])->name('api.mass-schedules.public');
+Route::get('/api/mass-schedules/public', [MassScheduleController::class, 'publicIndex'])->name('api.mass-schedules.public');
 Route::get('/announcements',               [AnnouncementsController::class, 'index'])->name('announcements');
 Route::get('/announcements/{announcement}',[AnnouncementsController::class, 'show'])->name('announcements.show');
 Route::get('/events',                      [EventsController::class, 'index'])->name('events');

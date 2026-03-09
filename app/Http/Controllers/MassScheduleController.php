@@ -32,7 +32,7 @@ class MassScheduleController extends Controller
      * Returns schedules grouped by day (0=Sunday … 6=Saturday)
      * for the current week, with cancellations merged in.
      */
-    public function public(Request $request)
+    public function publicIndex(Request $request)
     {
         $parishId   = $request->integer('parish_id', 0) ?: null;
         $dayFilter  = $request->has('day_of_week') ? (int) $request->day_of_week : null;
