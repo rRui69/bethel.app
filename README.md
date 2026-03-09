@@ -1,5 +1,4 @@
 <div align="center">
-  
   # ⛪ BethelApp
   **Step-by-Step Deployment Guide**
   *Web-Based Operation Management System for Diocesan Catholic Church*
