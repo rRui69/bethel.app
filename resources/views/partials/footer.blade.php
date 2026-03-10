@@ -38,7 +38,7 @@
                 <a href="{{ url('/mass-schedule') }}">Mass Schedule</a>
                 <a href="{{ url('/announcements') }}">Announcements</a>
                 <a href="{{ url('/events') }}">Events</a>
-                <a href="{{ url('/contact') }}">Contact Us</a>
+                {{--<a href="{{ url('/contact') }}">Contact Us</a>--}}
             </div>
 
             {{-- Sacraments --}}

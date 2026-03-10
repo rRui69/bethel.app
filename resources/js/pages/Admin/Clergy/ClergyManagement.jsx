@@ -218,6 +218,8 @@ function ClergyModal({ mode, clergy, parishes, onSave, onClose, loading, errors,
         first_name: '', last_name: '', middle_name: '',
         email: '', username: '', password: '', password_confirmation: '',
         phone: '', gender: '', birth_date: '',
+        // Address
+        country: 'Philippines', province: '', city: '', barangay: '', street_address: '', zip_code: '',
         parish_id: parishes[0]?.id || '', title: 'Fr.', specialization: '', schedule: [],
     };
 
@@ -231,6 +233,13 @@ function ClergyModal({ mode, clergy, parishes, onSave, onClose, loading, errors,
         phone:          clergy.phone          || '',
         gender:         clergy.gender         || '',
         birth_date:     clergy.birth_date     || '',
+        // Address pre-populated from API response
+        country:        clergy.country        || 'Philippines',
+        province:       clergy.province       || '',
+        city:           clergy.city           || '',
+        barangay:       clergy.barangay       || '',
+        street_address: clergy.street_address || '',
+        zip_code:       clergy.zip_code       || '',
         parish_id:      clergy.parish_id      || parishes[0]?.id || '',
         title:          clergy.title          || 'Fr.',
         specialization: clergy.specialization || '',
@@ -249,7 +258,8 @@ function ClergyModal({ mode, clergy, parishes, onSave, onClose, loading, errors,
     const tabErr = (tab) => {
         if (!errors) return false;
         const map = {
-            personal: ['first_name','last_name','middle_name','phone','gender','birth_date'],
+            personal: ['first_name','last_name','middle_name','phone','gender','birth_date',
+                       'country','province','city','barangay','street_address','zip_code'],
             account:  ['email','username','password','password_confirmation'],
             ministry: ['title','parish_id','specialization'],
             schedule: ['schedule'],
@@ -312,18 +322,37 @@ function ClergyModal({ mode, clergy, parishes, onSave, onClose, loading, errors,
                     {apiError && <Alert>{apiError}</Alert>}
 
                     {activeTab === 'personal' && (
-                        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px' }}>
-                            <Field label="First Name"  value={form.first_name}  onChange={set('first_name')}  error={errors?.first_name}  required />
-                            <Field label="Last Name"   value={form.last_name}   onChange={set('last_name')}   error={errors?.last_name}   required />
-                            <Field label="Middle Name" value={form.middle_name} onChange={set('middle_name')} error={errors?.middle_name} />
-                            <Field label="Phone"       value={form.phone}       onChange={set('phone')}       error={errors?.phone} />
-                            <Field label="Gender" error={errors?.gender}>
-                                <select style={inp} value={form.gender} onChange={set('gender')}>
-                                    <option value="">— Select —</option>
-                                    <option>Male</option><option>Female</option><option>Other</option>
-                                </select>
-                            </Field>
-                            <Field label="Birth Date" type="date" value={form.birth_date} onChange={set('birth_date')} error={errors?.birth_date} />
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+                            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px' }}>
+                                <Field label="First Name"  value={form.first_name}  onChange={set('first_name')}  error={errors?.first_name}  required />
+                                <Field label="Last Name"   value={form.last_name}   onChange={set('last_name')}   error={errors?.last_name}   required />
+                                <Field label="Middle Name" value={form.middle_name} onChange={set('middle_name')} error={errors?.middle_name} />
+                                <Field label="Phone" value={form.phone} onChange={set('phone')} error={errors?.phone} required />
+                                <Field label="Gender" error={errors?.gender} required>
+                                    <select style={{ ...inp, ...(errors?.gender ? { borderColor: '#ef4444' } : {}) }} value={form.gender} onChange={set('gender')}>
+                                        <option value="">— Select —</option>
+                                        <option>Male</option>
+                                        <option>Female</option>
+                                        <option>Prefer not to say</option>
+                                    </select>
+                                </Field>
+                                <Field label="Birth Date" type="date" value={form.birth_date} onChange={set('birth_date')} error={errors?.birth_date} required />
+                            </div>
+
+                            {/* Address Section */}
+                            <div>
+                                <div style={{ fontSize: '0.78rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.06em', color: 'var(--text-muted)', marginBottom: '14px', paddingBottom: '8px', borderBottom: '1px solid var(--border-color, #e5e7eb)' }}>
+                                    Address
+                                </div>
+                                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
+                                    <Field label="Street Address" value={form.street_address} onChange={set('street_address')} error={errors?.street_address} style={{ gridColumn: '1 / -1' }} />
+                                    <Field label="Barangay"       value={form.barangay}       onChange={set('barangay')}       error={errors?.barangay} />
+                                    <Field label="City / Municipality" value={form.city}      onChange={set('city')}           error={errors?.city} />
+                                    <Field label="Province"       value={form.province}       onChange={set('province')}       error={errors?.province} />
+                                    <Field label="ZIP Code"       value={form.zip_code}       onChange={set('zip_code')}       error={errors?.zip_code} />
+                                    <Field label="Country"        value={form.country}        onChange={set('country')}        error={errors?.country} />
+                                </div>
+                            </div>
                         </div>
                     )}
 

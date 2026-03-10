@@ -748,7 +748,10 @@ export default function SacramentRequests({ onStatsRefresh }) {
                                 <tr><td colSpan={8} className="um-table-empty">No requests found.</td></tr>
                             ) : (
                                 filteredRequests.map((req, i) => (
-                                    <tr key={req.id} style={{ cursor: 'pointer' }} onClick={() => setDetailId(req.id)}>
+                                    <tr key={req.id}
+                                        className={`sr-row--${req.status ?? 'pending'}`}
+                                        style={{ cursor: 'pointer' }}
+                                        onClick={() => setDetailId(req.id)}>
                                         <td className="um-table-num">{i + 1}</td>
                                         <td>
                                             <div style={{ fontWeight: 600, fontSize: '0.875rem', color: 'var(--text-primary)' }}>{req.requester_name ?? 'Unknown'}</div>

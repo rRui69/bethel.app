@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Admin\AdminBaseController;
+use App\Models\Event;
 use App\Models\Notification;
 use App\Models\RequestMessage;
 use App\Models\RequestPayment;
@@ -162,6 +163,11 @@ class SacramentRequestController extends AdminBaseController
         // Notify parishioner if status changed
         if ($oldStatus !== $validated['status']) {
             $this->notifyParishioner($sacramentRequest, $validated['status']);
+        }
+
+        // Auto-create an Event record when a sacramental request is approved
+        if ($oldStatus !== 'approved' && $validated['status'] === 'approved') {
+            $this->createEventFromSacramentRequest($sacramentRequest);
         }
 
         return response()->json([
@@ -367,6 +373,79 @@ class SacramentRequestController extends AdminBaseController
             'sender_id' => $message->sender_id,
             'time'      => $message->created_at->format('M d, g:i A'),
         ], 201);
+    }
+
+    // ── Private: auto-create event when sacrament is approved ─────────
+    /**
+     * Creates a pending Event record in the events list when an admin
+     * approves a sacramental request. The event starts as 'Pending' so
+     * the helpdesk can review and set it to 'Approved' / 'Completed'.
+     */
+    private function createEventFromSacramentRequest(SacramentRequest $req): void
+    {
+        try {
+            $eventType = $this->mapSacramentToEventType($req->sacrament_type);
+
+            // Guard: only create if this is a recognised sacramental event type
+            if (! $eventType) {
+                Log::info("createEventFromSacramentRequest: unknown type '{$req->sacrament_type}', skipping.");
+                return;
+            }
+
+            $parishionerName = $req->user?->full_name ?? 'Parishioner';
+
+            Event::create([
+                'parish_id'         => $req->parish_id,
+                'user_id'           => Auth::id(),       // admin who approved
+                'clergy_id'         => $req->assigned_clergy_id,
+                'title'             => "{$req->sacrament_type} – {$parishionerName}",
+                'description'       => "Auto-generated from sacrament request #{$req->id}."
+                                       . ($req->admin_notes ? " Notes: {$req->admin_notes}" : ''),
+                'type'              => $eventType,
+                'event_date'        => $req->preferred_date ?? now()->addWeek(),
+                'start_time'        => $req->preferred_time,
+                'status'            => 'Pending',        // per requirement: shows as pending in events
+                'sacrament_details' => $req->details,
+            ]);
+        } catch (\Throwable $e) {
+            // Non-fatal: log and continue — do NOT roll back the approval
+            Log::warning('createEventFromSacramentRequest failed', [
+                'sacrament_request_id' => $req->id,
+                'error'                => $e->getMessage(),
+            ]);
+        }
+    }
+
+    /**
+     * Maps a sacrament_type string to a value in Event::SACRAMENTAL_TYPES.
+     * Returns null if no match found.
+     */
+    private function mapSacramentToEventType(string $sacramentType): ?string
+    {
+        // Direct match first (handles exact DB values)
+        if (in_array($sacramentType, Event::SACRAMENTAL_TYPES)) {
+            return $sacramentType;
+        }
+
+        // Case-insensitive fallback map for variant spellings
+        $map = [
+            'baptism'           => 'Baptism',
+            'marriage'          => 'Marriage',
+            'wedding'           => 'Marriage',
+            'confirmation'      => 'Confirmation',
+            'confession'        => 'Confession',
+            'reconciliation'    => 'Confession',
+            'first communion'   => 'First Communion',
+            'communion'         => 'First Communion',
+            'anointing'         => 'Anointing',
+            'anointing of the sick' => 'Anointing',
+            'burial'            => 'Burial',
+            'funeral'           => 'Burial',
+            'funeral services'  => 'Burial',
+        ];
+
+        $normalized = strtolower(trim($sacramentType));
+        return $map[$normalized] ?? null;
     }
 
     // ── Private: notify parishioner on status change ──────────

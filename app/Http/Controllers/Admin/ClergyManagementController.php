@@ -94,9 +94,19 @@ class ClergyManagementController extends AdminBaseController
             'email'          => 'required|email|unique:users,email',
             'username'       => 'required|string|max:50|unique:users,username|regex:/^[a-z0-9._]+$/i',
             'password'       => 'required|string|min:8|confirmed',
-            'phone'          => 'nullable|string|max:20',
-            'gender'         => 'nullable|in:Male,Female,Other',
-            'birth_date'     => 'nullable|date|before:today',
+            // DB: phone is NOT NULL — required for clergy staff
+            'phone'          => 'required|string|max:20',
+            // DB enum: Male, Female, Prefer not to say (NOT NULL)
+            'gender'         => 'required|in:Male,Female,Prefer not to say',
+            // DB: birth_date is NOT NULL — required for clergy staff
+            'birth_date'     => 'required|date|before:today',
+            // Address fields — all nullable in DB
+            'country'        => 'nullable|string|max:100',
+            'province'       => 'nullable|string|max:100',
+            'city'           => 'nullable|string|max:100',
+            'barangay'       => 'nullable|string|max:100',
+            'street_address' => 'nullable|string|max:255',
+            'zip_code'       => 'nullable|string|max:10',
             // Clergy profile
             'parish_id'      => 'required|exists:parishes,id',
             'title'          => 'required|in:Fr.,Rev.,Msgr.,Bp.,Cardinal,Deacon',
@@ -118,9 +128,15 @@ class ClergyManagementController extends AdminBaseController
                 'role'           => 'clergymen',
                 'account_status' => 'Active',
                 'parish_id'      => $validated['parish_id'],
-                'phone'          => $validated['phone'] ?? null,
-                'gender'         => $validated['gender'] ?? null,
-                'birth_date'     => $validated['birth_date'] ?? null,
+                'phone'          => $validated['phone'],
+                'gender'         => $validated['gender'],
+                'birth_date'     => $validated['birth_date'],
+                'country'        => $validated['country'] ?? 'Philippines',
+                'province'       => $validated['province'] ?? null,
+                'city'           => $validated['city'] ?? null,
+                'barangay'       => $validated['barangay'] ?? null,
+                'street_address' => $validated['street_address'] ?? null,
+                'zip_code'       => $validated['zip_code'] ?? null,
             ]);
 
             ClergyProfile::create([
@@ -154,10 +170,18 @@ class ClergyManagementController extends AdminBaseController
             'middle_name'    => 'nullable|string|max:100',
             'email'          => ['sometimes', 'required', 'email', Rule::unique('users', 'email')->ignore($user->id)],
             'username'       => ['sometimes', 'required', 'string', 'max:50', Rule::unique('users', 'username')->ignore($user->id)],
-            'phone'          => 'nullable|string|max:20',
-            'gender'         => 'nullable|in:Male,Female,Other',
-            'birth_date'     => 'nullable|date|before:today',
+            // DB: phone, gender, birth_date are NOT NULL — empty strings are rejected
+            'phone'          => 'sometimes|required|string|max:20',
+            'gender'         => 'sometimes|required|in:Male,Female,Prefer not to say',
+            'birth_date'     => 'sometimes|required|date|before:today',
             'account_status' => 'sometimes|in:Active,Inactive,Suspended',
+            // Address — nullable in DB
+            'country'        => 'nullable|string|max:100',
+            'province'       => 'nullable|string|max:100',
+            'city'           => 'nullable|string|max:100',
+            'barangay'       => 'nullable|string|max:100',
+            'street_address' => 'nullable|string|max:255',
+            'zip_code'       => 'nullable|string|max:10',
             // Clergy profile
             'parish_id'      => 'sometimes|required|exists:parishes,id',
             'title'          => 'sometimes|required|in:Fr.,Rev.,Msgr.,Bp.,Cardinal,Deacon',
@@ -174,6 +198,7 @@ class ClergyManagementController extends AdminBaseController
                 'first_name', 'last_name', 'middle_name',
                 'email', 'username', 'phone', 'gender', 'birth_date',
                 'account_status',
+                'country', 'province', 'city', 'barangay', 'street_address', 'zip_code',
             ]));
 
             if (isset($validated['parish_id'])) {
@@ -260,7 +285,15 @@ class ClergyManagementController extends AdminBaseController
             'username'       => $user->username,
             'phone'          => $user->phone,
             'gender'         => $user->gender,
+            'birth_date'     => $user->birth_date?->format('Y-m-d'),
             'account_status' => $user->account_status,
+            // Address fields — needed for edit form pre-population
+            'country'        => $user->country ?? 'Philippines',
+            'province'       => $user->province,
+            'city'           => $user->city,
+            'barangay'       => $user->barangay,
+            'street_address' => $user->street_address,
+            'zip_code'       => $user->zip_code,
             'title'          => $profile?->title ?? '—',
             'specialization' => $profile?->specialization ?? '—',
             'parish_id'      => $profile?->parish_id,

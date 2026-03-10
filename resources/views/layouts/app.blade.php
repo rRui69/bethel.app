@@ -6,7 +6,7 @@
     <meta name="csrf-token" content="{{ csrf_token() }}" />
     <meta name="description" content="@yield('meta_description', 'BethelApp — Your one-stop hub for parish life.')">
 
-    <title>@yield('title', 'BethelApp') — Parish Hub</title>
+    <title>@yield('title', 'BethelApp')</title>
 
     {{-- Favicon --}}
     <link rel="icon" type="image/x-icon" href="{{ asset('favicon.ico') }}">

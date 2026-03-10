@@ -1805,3 +1805,13 @@ body {
 .sr-action-btn:hover { opacity: 0.75; }
 .sr-action-btn--approve { background: rgba(16,185,129,0.15); color: #059669; }
 .sr-action-btn--reject  { background: rgba(239,68,68,0.15);  color: #dc2626; }
+
+/* ── Sacrament Requests: status-based row coloring ──────────────────── */
+/* Applied to <td> so they override the generic tr:hover td rule         */
+.admin-table tbody tr.sr-row--pending  td { background: rgba(245,158,11,0.05);  }
+.admin-table tbody tr.sr-row--approved td { background: rgba(16,185,129,0.05); }
+.admin-table tbody tr.sr-row--rejected td { background: rgba(239,68,68,0.05);  }
+
+.admin-table tbody tr.sr-row--pending:hover  td { background: rgba(245,158,11,0.12);  }
+.admin-table tbody tr.sr-row--approved:hover td { background: rgba(16,185,129,0.12); }
+.admin-table tbody tr.sr-row--rejected:hover td { background: rgba(239,68,68,0.10);  }
