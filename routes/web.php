@@ -18,6 +18,8 @@ use App\Http\Controllers\Admin\MassScheduleController as AdminMassScheduleContro
 use App\Http\Controllers\MassScheduleController;
 use App\Http\Controllers\SacramentController;
 use App\Http\Controllers\Admin\SacramentTypeController;
+use App\Http\Controllers\LivestreamController;
+use App\Http\Controllers\Admin\LivestreamController as AdminLivestreamController;
 
 Route::get('/', [HomeController::class, 'index'])->name('home');
 
@@ -33,6 +35,27 @@ Route::get('/events/{event}',              [EventsController::class, 'show'])->n
 Route::get('/sacraments',                  [SacramentController::class, 'listing'])->name('sacraments');
 Route::get('/sacraments/{slug}',           [SacramentController::class, 'form'])->name('sacraments.form');
 Route::get('/contact',                     fn () => view('coming-soon'))->name('contact');
+
+// Dedicated public livestream page
+Route::get('/livestream', [LivestreamController::class, 'index'])
+    ->name('livestream');
+
+// Public API — no auth required (homepage widget + viewer token)
+Route::prefix('api/livestreams')->name('api.livestreams.')->group(function () {
+
+    // Homepage widget polls this every 30 seconds
+    Route::get('/active',          [LivestreamController::class, 'active'])
+        ->name('active');
+
+    // Paginated archive for the /livestream public page
+    Route::get('/archive',         [LivestreamController::class, 'archive'])
+        ->name('archive');
+
+    // Agora subscriber token — public viewers need this to join camera streams
+    Route::post('/subscriber-token', [LivestreamController::class, 'subscriberToken'])
+        ->name('subscriber-token');
+});
+
 
 require __DIR__.'/auth.php';
 
@@ -82,25 +105,28 @@ Route::prefix('admin')
     ->name('admin.')
     ->group(function () {
 
-        Route::get('/dashboard',       [DashboardController::class,           'index'])->name('dashboard');
-        Route::get('/users',           [UserManagementController::class,       'page'])->name('users');
-        Route::get('/announcements',   [AnnouncementController::class,         'page'])->name('announcements');
+        Route::get('/dashboard',            [DashboardController::class,           'index'])->name('dashboard');
+        Route::get('/users',                [UserManagementController::class,       'page'])->name('users');
+        Route::get('/announcements',        [AnnouncementController::class,         'page'])->name('announcements');
         Route::get('/announcements/create', [AnnouncementController::class,    'page'])->name('announcements.create');
-        Route::get('/events',          [EventController::class,                'page'])->name('events');
-        Route::get('/events/create',   [EventController::class,                'page'])->name('events.create');
-        Route::get('/parishioners',    fn () => view('coming-soon'))->name('parishioners');
-        Route::get('/sacraments',      [AdminSacramentRequestController::class,'page'])->name('sacraments');
-        Route::get('/sacrament-types', [SacramentTypeController::class,        'page'])->name('sacrament-types');
-        Route::get('/roles',           fn () => view('coming-soon'))->name('roles');
+        Route::get('/events',               [EventController::class,                'page'])->name('events');
+        Route::get('/events/create',        [EventController::class,                'page'])->name('events.create');
+        Route::get('/parishioners',         fn () => view('coming-soon'))->name('parishioners');
+        Route::get('/sacraments',           [AdminSacramentRequestController::class,'page'])->name('sacraments');
+        Route::get('/sacrament-types',      [SacramentTypeController::class,        'page'])->name('sacrament-types');
+        Route::get('/roles',                fn () => view('coming-soon'))->name('roles');
 
-        // ── Clergy Management (super_admin creates/manages clergy accounts) ──
-        Route::get('/clergy',           [ClergyManagementController::class, 'page'])->name('clergy');
+        // Clergy Management (super_admin creates/manage clergy accounts)
+        Route::get('/clergy',               [ClergyManagementController::class,'page'])->name('clergy');
 
-        // ── Clergy Dashboard (clergy members view their own assignments) ───
-        Route::get('/clergy-dashboard', [ClergyController::class,            'page'])->name('clergy-dashboard');
+        // Clergy Dashboard
+        Route::get('/clergy-dashboard',     [ClergyController::class,'page'])->name('clergy-dashboard');
 
-        // ── Mass Schedules ────────────────────────────────────────────────
-        Route::get('/mass-schedules',   [AdminMassScheduleController::class,  'page'])->name('mass-schedules');
+        // Mass Schedules
+        Route::get('/mass-schedules',       [AdminMassScheduleController::class,'page'])->name('mass-schedules');
+
+        // Livestreams
+        Route::get('/livestreams',          [AdminLivestreamController::class,'page'])->name('livestreams');
 
         Route::prefix('api')
             ->middleware('throttle:60,1')
@@ -164,13 +190,13 @@ Route::prefix('admin')
                 Route::delete('/clergy/{user}',            [ClergyManagementController::class, 'destroy'])->name('clergy.destroy');
                 Route::post('/clergy/{user}/reset-password',[ClergyManagementController::class, 'resetPassword'])->name('clergy.reset-password');
 
-                // ── Clergy Dashboard API (clergy member's own portal) ──────────────
+                // Clergy Dashboard
                 Route::get('/clergy-profile',                              [ClergyController::class, 'myProfile'])->name('clergy-profile');
                 Route::get('/clergy-assignments',                          [ClergyController::class, 'assignments'])->name('clergy-assignments');
                 Route::post('/clergy-assignments/{sacramentRequest}/respond', [ClergyController::class, 'respond'])->name('clergy-assignments.respond');
                 Route::get('/clergy-records',                              [ClergyController::class, 'records'])->name('clergy-records');
 
-                // ── Mass Schedules ────────────────────────────────────────────────
+                // Mass Schedules
                 Route::get('/mass-schedules',                              [AdminMassScheduleController::class, 'index'])->name('mass-schedules.index');
                 Route::post('/mass-schedules',                             [AdminMassScheduleController::class, 'store'])->name('mass-schedules.store');
                 Route::get('/mass-schedules/{massSchedule}',               [AdminMassScheduleController::class, 'show'])->name('mass-schedules.show');
@@ -178,5 +204,19 @@ Route::prefix('admin')
                 Route::delete('/mass-schedules/{massSchedule}',            [AdminMassScheduleController::class, 'destroy'])->name('mass-schedules.destroy');
                 Route::post('/mass-schedules/{massSchedule}/cancel',       [AdminMassScheduleController::class, 'cancel'])->name('mass-schedules.cancel');
                 Route::delete('/mass-schedules/{massSchedule}/cancel/{cancellation}', [AdminMassScheduleController::class, 'removeCancel'])->name('mass-schedules.cancel.remove');
+
+                // Livestreams
+                Route::get('/livestreams/stats',                    [AdminLivestreamController::class, 'stats'])->name('livestreams.stats');
+                Route::get('/livestreams',                          [AdminLivestreamController::class, 'index'])->name('livestreams.index');
+                Route::post('/livestreams',                         [AdminLivestreamController::class, 'store'])->name('livestreams.store');
+                Route::get('/livestreams/{livestream}',             [AdminLivestreamController::class, 'show'])->name('livestreams.show');
+                Route::patch('/livestreams/{livestream}',           [AdminLivestreamController::class, 'update'])->name('livestreams.update');
+                Route::delete('/livestreams/{livestream}',          [AdminLivestreamController::class, 'destroy'])->name('livestreams.destroy');
+                Route::patch('/livestreams/{livestream}/start',     [AdminLivestreamController::class, 'start'])->name('livestreams.start');
+                Route::patch('/livestreams/{livestream}/end',       [AdminLivestreamController::class, 'end'])->name('livestreams.end');
+                Route::patch('/livestreams/{livestream}/archive',   [AdminLivestreamController::class, 'toggleArchive'])->name('livestreams.archive');
+
+                // Agora publisher token
+                Route::post('/livestreams/publisher-token',         [AdminLivestreamController::class, 'publisherToken'])->name('livestreams.publisher-token');
             });
     });

@@ -11,6 +11,7 @@ import SacramentTypes     from './SacramentTypes/SacramentTypes';
 import ClergyManagement   from './Clergy/ClergyManagement';
 import ClergyDashboard    from '../Clergy/ClergyDashboard';
 import MassScheduleAdmin  from './MassSchedule/MassScheduleAdmin';
+import LivestreamAdmin from './Livestream/LivestreamAdmin';
 
 // Page router — add new admin pages here
 const PAGE_MAP = {
@@ -25,6 +26,7 @@ const PAGE_MAP = {
     '/admin/clergy':               ClergyManagement,
     '/admin/clergy-dashboard':     ClergyDashboard,
     '/admin/mass-schedules':       MassScheduleAdmin,
+    '/admin/livestreams': LivestreamAdmin,
 };
 
 export default function AdminApp({ stats: initialStats, admin, parishes, notifications, clergy }) {

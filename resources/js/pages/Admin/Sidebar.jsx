@@ -4,7 +4,7 @@ import {
     FaBullhorn, FaChurch, FaChevronLeft,
     FaChevronRight, FaUserGear, FaWandMagicSparkles,
     FaRightFromBracket, FaPersonPraying, FaBookOpen,
-    FaCalendarCheck,
+    FaCalendarCheck, FaTowerBroadcast,
 } from 'react-icons/fa6';
 
 const NAV_SECTIONS = [
@@ -85,6 +85,14 @@ const NAV_SECTIONS = [
                 label: 'Announcements',
                 icon:  FaBullhorn,
                 href:  '/admin/announcements',
+                badge: null,
+                roles: ['super_admin', 'parish_admin'],
+            },
+            {
+                id:    'livestreams',
+                label: 'Livestreams',
+                icon:  FaTowerBroadcast,
+                href:  '/admin/livestreams',
                 badge: null,
                 roles: ['super_admin', 'parish_admin'],
             },

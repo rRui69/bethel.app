@@ -35,4 +35,8 @@ return [
         ],
     ],
 
+    'agora' => [
+        'app_id'      => env('VITE_AGORA_APP_ID'),
+        'certificate' => env('VITE_AGORA_CERTIFICATE'),
+    ],
 ];
