@@ -1,15 +1,8 @@
 <?php
 
 namespace App\Services;
-
 use App\Agora\RtcTokenBuilder2;
 
-/**
- * AgoraTokenService
- *
- * Thin wrapper around vendored Agora RtcTokenBuilder2.
- * No Composer package required — uses files in app/Agora/
- */
 class AgoraTokenService
 {
     private string $appId;
@@ -42,7 +35,7 @@ class AgoraTokenService
     }
 
     /**
-     * Subscriber token — for public viewers (audience only).
+     * Subscriber token — for public viewers.
      * Grants: join only — cannot publish any stream.
      */
     public function generateSubscriberToken(
