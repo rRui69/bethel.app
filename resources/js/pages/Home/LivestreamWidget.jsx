@@ -71,7 +71,7 @@ export default function LivestreamWidget() {
     }, []);
 
     useEffect(() => {
-        const interval = setInterval(poll, 30_000);
+        const interval = setInterval(poll, 10_000);
         return () => clearInterval(interval);
     }, [poll]);
 
