@@ -1,8 +1,17 @@
 <?php
 
 namespace App\Services;
-use App\Agora\RtcTokenBuilder2;
 
+use BoogieFromZk\AgoraToken\RtcTokenBuilder2;
+
+/**
+ * AgoraTokenService
+ *
+ * Uses boogiefromzk/agora-token — a thin Composer wrapper
+ * around Agora's official PHP source from AgoraIO/Tools.
+ *
+ * Install: composer require boogiefromzk/agora-token
+ */
 class AgoraTokenService
 {
     private string $appId;
@@ -35,7 +44,7 @@ class AgoraTokenService
     }
 
     /**
-     * Subscriber token — for public viewers.
+     * Subscriber token — for public viewers (audience only).
      * Grants: join only — cannot publish any stream.
      */
     public function generateSubscriberToken(
