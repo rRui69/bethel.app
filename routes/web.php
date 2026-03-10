@@ -102,7 +102,6 @@ Route::prefix('admin')
     ->middleware(['auth', 'admin'])
     ->name('admin.')
     ->group(function () {
-        Route::get('',                      [DashboardController::class,           'index'])->name('dashboard');
         Route::get('/dashboard',            [DashboardController::class,           'index'])->name('dashboard');
         Route::get('/users',                [UserManagementController::class,       'page'])->name('users');
         Route::get('/announcements',        [AnnouncementController::class,         'page'])->name('announcements');
