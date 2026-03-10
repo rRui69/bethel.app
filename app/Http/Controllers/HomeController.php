@@ -42,6 +42,7 @@ class HomeController extends Controller
                 'category' => $a->category,
                 'parish'   => $a->parish?->name,
                 'date'     => $a->published_at?->toDateString(),
+                // image_path stores the full Cloudinary URL — pass through directly
                 'image'    => $a->image_path,
             ])
             ->toArray();
@@ -112,7 +113,7 @@ class HomeController extends Controller
             ])
             ->toArray();
 
-            // ── Active Livestreams — for homepage widget ───────────────
+            // Active Livestreams — for homepage widget
             $activeStreams = Livestream::where('status', 'live')
                 ->select('id', 'title', 'description', 'type', 'facebook_url', 'agora_channel')
                 ->latest('started_at')

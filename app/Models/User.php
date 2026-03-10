@@ -33,7 +33,7 @@ class User extends Authenticatable
         ];
     }
 
-    // ── Computed ────────────────────────────────────────────────────
+    // Computed
 
     public function getFullNameAttribute(): string
     {
@@ -65,7 +65,7 @@ class User extends Authenticatable
         return $this->account_status === 'Active';
     }
 
-    // ── Scopes ──────────────────────────────────────────────────────
+    // Scopes
 
     public function scopeActive($query)
     {
@@ -77,7 +77,7 @@ class User extends Authenticatable
         return $query->where('role', $role);
     }
 
-    // ── Role Helpers ─────────────────────────────────────────────────
+    // Role Helpers
 
     public function isSuperAdmin(): bool  { return $this->role === 'super_admin'; }
     public function isParishAdmin(): bool { return $this->role === 'parish_admin'; }
@@ -88,7 +88,7 @@ class User extends Authenticatable
         return in_array($this->role, ['super_admin', 'parish_admin', 'clergymen']);
     }
 
-    // ── Relationships ─────────────────────────────────────────────────
+    // Relationships
 
     /**
      * Ecclesiastical profile — only populated for role = 'clergymen'.

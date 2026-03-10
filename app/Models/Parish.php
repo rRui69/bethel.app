@@ -24,6 +24,7 @@ class Parish extends Model
     /**
      * @deprecated Use clergyProfiles() — the clergy table no longer exists.
      */
+    //Do not touch pleaseee T_T
     public function clergy()
     {
         return $this->clergyProfiles();

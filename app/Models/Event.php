@@ -12,7 +12,7 @@ class Event extends Model
 {
     use HasFactory;
 
-    // Sacramental types — used to distinguish requests from regular events
+    // Sacramental types
     const SACRAMENTAL_TYPES = [
         'Baptism', 'Marriage', 'Confirmation',
         'Confession', 'First Communion', 'Anointing', 'Burial',
@@ -32,7 +32,7 @@ class Event extends Model
         'sacrament_details' => 'array',
     ];
 
-    // ── Relationships ──────────────────────────────────────
+    // Relationships
     public function parish()
     {
         return $this->belongsTo(Parish::class);
@@ -43,16 +43,12 @@ class Event extends Model
         return $this->belongsTo(User::class);
     }
 
-    /**
-     * The clergy User assigned to this event.
-     * Points to users.id — clergy are now real User records.
-     */
     public function clergy()
     {
         return $this->belongsTo(User::class, 'clergy_id');
     }
 
-    // ── Scopes ─────────────────────────────────────────────
+    // Scopes
     public function scopeSacramental($query)
     {
         return $query->whereIn('type', self::SACRAMENTAL_TYPES);
@@ -74,7 +70,7 @@ class Event extends Model
                      ->orderBy('event_date');
     }
 
-    // ── Helpers ────────────────────────────────────────────
+    // Helpers
     public function isSacramental(): bool
     {
         return in_array($this->type, self::SACRAMENTAL_TYPES);

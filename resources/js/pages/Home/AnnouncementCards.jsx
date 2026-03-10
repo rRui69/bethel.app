@@ -1,6 +1,8 @@
 import React, { useState } from 'react';
 import { FaNewspaper, FaBullhorn, FaArrowRight, FaCalendar, FaChurch } from 'react-icons/fa6';
 
+const ANNOUNCEMENTS_BG = '/images/sanlorenzo.png';
+const OVERLAY_ALPHA = 0.72;
 const PLACEHOLDER_IMG = 'https://placehold.co/600x400/1a3c5e/ffffff?text=BethelApp';
 const TABS = ['All', 'Parish News', 'Community', 'Liturgy'];
 
@@ -11,24 +13,28 @@ function formatDate(dateStr) {
     });
 }
 
+const hasBg = Boolean(ANNOUNCEMENTS_BG);
+
 function FeaturedCard({ item }) {
     if (!item) {
         return (
             <div className="card border-0 shadow-sm h-100 bethel-card d-flex align-items-center justify-content-center py-5">
                 <div className="text-center text-muted">
-                    {/* ── ICON: swap FaNewspaper with any react-icons component ── */}
                     <FaNewspaper size={40} className="d-block mb-2 mx-auto" style={{ opacity: 0.3, color: 'var(--bethel-primary)' }} />
                     <p>No announcements yet</p>
                 </div>
             </div>
         );
     }
+
+    const cardImage = item.image || PLACEHOLDER_IMG;
+
     return (
         <article className="card border-0 shadow-sm bethel-card overflow-hidden h-100">
             <div
                 style={{
                     height: '240px',
-                    backgroundImage: `url(${item.image || PLACEHOLDER_IMG})`,
+                    backgroundImage: `url(${cardImage})`,
                     backgroundSize: 'cover',
                     backgroundPosition: 'center',
                 }}
@@ -38,7 +44,7 @@ function FeaturedCard({ item }) {
                 <div style={{ height: '100%', background: 'linear-gradient(to top, rgba(15,39,68,0.7) 0%, transparent 60%)' }} />
             </div>
             <div className="card-body p-4 d-flex flex-column">
-                <span className="badge-category mb-2 d-inline-block" style={{ width: 'fit-content' }}>
+                <span className="badge-category mb-2 d-inline-block" style={{ width: 'fit-content', color: 'var(--bethel-primary)' }}>
                     {item.category || 'General'}
                 </span>
                 <h4 className="card-title fw-bold lh-sm mb-2" style={{ color: 'var(--bethel-primary)', fontSize: '1.15rem' }}>
@@ -51,7 +57,6 @@ function FeaturedCard({ item }) {
                      style={{ borderTop: '1px solid #eef2f7' }}>
                     <div className="d-flex align-items-center gap-2">
                         <div style={{ width: '28px', height: '28px', borderRadius: '50%', background: 'var(--bethel-primary)', display: 'grid', placeItems: 'center', flexShrink: 0 }}>
-                            {/* ── ICON: parish badge icon ── */}
                             <FaChurch size={12} color="#fff" />
                         </div>
                         <div>
@@ -71,12 +76,14 @@ function FeaturedCard({ item }) {
 }
 
 function SmallCard({ item }) {
+    const cardImage = item.image || PLACEHOLDER_IMG;
+
     return (
         <article className="card border-0 shadow-sm bethel-card overflow-hidden">
             <div className="row g-0">
                 <div className="col-4">
                     <div style={{
-                        backgroundImage: `url(${item.image || PLACEHOLDER_IMG})`,
+                        backgroundImage: `url(${cardImage})`,
                         backgroundSize: 'cover',
                         backgroundPosition: 'center',
                         minHeight: '110px',
@@ -85,14 +92,13 @@ function SmallCard({ item }) {
                 </div>
                 <div className="col-8">
                     <div className="card-body p-3">
-                        <span className="badge-category d-inline-block mb-1" style={{ fontSize: '0.65rem' }}>
+                        <span className="badge-category d-inline-block mb-1" style={{ color: 'var(--bethel-secondary)', fontSize: '0.65rem' }}>
                             {item.category || 'General'}
                         </span>
                         <h6 className="card-title mb-1 lh-sm fw-bold" style={{ fontSize: '0.85rem', color: 'var(--bethel-primary)' }}>
                             {item.title}
                         </h6>
                         <small className="text-muted d-flex align-items-center gap-1 mb-2" style={{ fontSize: '0.72rem' }}>
-                            {/* ── ICON: date icon ── */}
                             <FaCalendar size={10} />
                             {formatDate(item.date)}
                         </small>
@@ -119,26 +125,61 @@ export default function AnnouncementCards({ announcements = [] }) {
     const secondary = rest.slice(0, 3);
 
     return (
-        <section className="py-5 bg-bethel-light" aria-labelledby="announcements-heading">
-            <div className="container">
+        <section
+            className={`py-5 ${!hasBg ? 'bg-bethel-light' : ''}`}
+            aria-labelledby="announcements-heading"
+            style={hasBg ? {
+                position:           'relative',
+                backgroundImage:    `url(${ANNOUNCEMENTS_BG})`,    /* ← image source */
+                backgroundSize:     'cover',
+                backgroundPosition: 'center',
+                backgroundAttachment: 'fixed',  /* ← remove for plain scroll */
+            } : {}}
+        >
+            {hasBg && (
+                <div
+                    aria-hidden="true"
+                    style={{
+                        position: 'absolute',
+                        inset:    0,
+                        background: `rgba(10, 25, 50, ${OVERLAY_ALPHA})`,
+                        zIndex:   0,
+                    }}
+                />
+            )}
+
+            <div className="container" style={{ position: 'relative', zIndex: 1 }}>
 
                 <div className="row mb-4 align-items-end">
                     <div className="col">
-                        <p style={{ fontSize: '0.75rem', fontWeight: 700, letterSpacing: '2px', textTransform: 'uppercase', color: 'var(--bethel-secondary)' }}>
+                        {/* Eyebrow — keeps gold/secondary colour on both bg modes */}
+                        <p style={{
+                            fontSize: '0.75rem', fontWeight: 700,
+                            letterSpacing: '2px', textTransform: 'uppercase',
+                            color: 'var(--bethel-secondary)',
+                            // ── EYEBROW FONT SIZE → change '0.75rem' above ──
+                        }}>
                             Latest News
                         </p>
-                        <h2 id="announcements-heading" className="bethel-section-title mb-0">Announcements</h2>
+                        <h2
+                            id="announcements-heading"
+                            className="bethel-section-title mb-0"
+                            style={hasBg ? { color: '#ffffff' } : {}}
+                        >
+                            Announcements
+                        </h2>
                         <div className="bethel-section-divider"></div>
                     </div>
                     <div className="col-auto">
+
                         <a href="/announcements"
-                           className="btn btn-sm btn-outline-secondary rounded-pill px-3 d-inline-flex align-items-center gap-1">
+                           className={`btn btn-sm rounded-pill px-3 d-inline-flex align-items-center gap-1 ${
+                               hasBg ? 'btn-outline-light' : 'btn-outline-secondary'
+                           }`}>
                             View All <FaArrowRight size={10} />
                         </a>
                     </div>
                 </div>
-
-                {/* Tab Filter */}
                 <div className="d-flex gap-2 flex-wrap mb-4">
                     {TABS.map(tab => (
                         <button
@@ -161,8 +202,8 @@ export default function AnnouncementCards({ announcements = [] }) {
                             {secondary.length > 0
                                 ? secondary.map((item, i) => <SmallCard key={item.id ?? i} item={item} />)
                                 : (
-                                    <div className="text-center text-muted py-5">
-                                        <FaBullhorn size={40} className="d-block mb-2 mx-auto" style={{ opacity: 0.25, color: 'var(--bethel-primary)' }} />
+                                    <div className="text-center py-5" style={{ color: hasBg ? 'rgba(255,255,255,0.65)' : undefined }}>
+                                        <FaBullhorn size={40} className="d-block mb-2 mx-auto" style={{ opacity: 0.35 }} />
                                         <p style={{ fontSize: '0.875rem' }}>No other announcements in this category.</p>
                                     </div>
                                 )

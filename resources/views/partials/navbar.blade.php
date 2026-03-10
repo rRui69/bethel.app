@@ -87,7 +87,7 @@
                 <div id="bethel-theme-toggle"></div>
                       {{-- Notification Bell --}}
                 @auth
-                    <div id="bethel-notification-bell" data-is-auth="true"></div>
+                    <div id="bethel-notification-bell" style="background: var(--bethel-secondary);" data-is-auth="true"></div>
                 @endauth
           @auth
                     {{-- Logged-in user dropdown --}}

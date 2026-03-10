@@ -41,7 +41,7 @@ class MassSchedule extends Model
         'Evening', 'Midday', 'Anticipated', 'Pilgrimage',
     ];
 
-    // ── Relationships ────────────────────────────────────────────
+    // Relationships
 
     public function parish(): BelongsTo
     {
@@ -63,7 +63,7 @@ class MassSchedule extends Model
         return $this->hasMany(MassScheduleCancellation::class);
     }
 
-    // ── Accessors ─────────────────────────────────────────────────
+    // Accessors
 
     public function getDayNameAttribute(): string
     {
@@ -82,7 +82,7 @@ class MassSchedule extends Model
             : null;
     }
 
-    // ── Scopes ────────────────────────────────────────────────────
+    // Scopes
 
     public function scopeActive($query)
     {

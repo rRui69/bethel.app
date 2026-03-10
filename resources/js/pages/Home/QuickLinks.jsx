@@ -2,11 +2,6 @@ import React, { useState, useEffect } from 'react';
 import ICON_MAP from '@/config/iconMap';
 import { FaArrowRight } from 'react-icons/fa6';
 
-/**
- * QuickLinks
- * Fetches active sacrament types from the DB.
- * Shows all as cards on the homepage.
- */
 export default function QuickLinks() {
     const [sacraments, setSacraments] = useState([]);
     const [loading,    setLoading]    = useState(true);

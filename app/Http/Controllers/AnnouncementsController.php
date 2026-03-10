@@ -10,7 +10,7 @@ class AnnouncementsController extends Controller
     {
         $announcements = Announcement::published()
             ->with('parish:id,name')
-            ->select('id', 'parish_id', 'title', 'excerpt', 'body', 'category', 'published_at')
+            ->select('id', 'parish_id', 'title', 'excerpt', 'body', 'category', 'image_path', 'published_at')
             ->latest('published_at')
             ->get()
             ->map(fn ($a) => [
@@ -21,6 +21,8 @@ class AnnouncementsController extends Controller
                 'category' => $a->category,
                 'parish'   => $a->parish?->name,
                 'date'     => $a->published_at?->format('M d, Y'),
+                // image_path stores the full Cloudinary URL — pass through directly
+                'image'    => $a->image_path,
             ])
             ->toArray();
 
@@ -45,6 +47,7 @@ class AnnouncementsController extends Controller
                 'category' => $announcement->category,
                 'parish'   => $announcement->parish?->name,
                 'date'     => $announcement->published_at?->format('M d, Y'),
+                'image'    => $announcement->image_path,
             ],
         ];
 

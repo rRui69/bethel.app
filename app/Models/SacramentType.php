@@ -23,7 +23,7 @@ class SacramentType extends Model
         'sort_order'  => 'integer',
     ];
 
-    // ── Auto-generate slug from name ─────────────────────────────
+    // Auto-generate
     protected static function booted(): void
     {
         static::creating(function (SacramentType $type) {
@@ -51,19 +51,19 @@ class SacramentType extends Model
         return $slug;
     }
 
-    // ── Relationships ─────────────────────────────────────────────
+    // Relationships
     public function requests(): HasMany
     {
         return $this->hasMany(SacramentRequest::class);
     }
 
-    // ── Scopes ────────────────────────────────────────────────────
+    // Scopes
     public function scopeActive($query)
     {
         return $query->where('is_active', true)->orderBy('sort_order')->orderBy('name');
     }
 
-    // ── Helpers ───────────────────────────────────────────────────
+    // Helpers
     public function getFieldCountAttribute(): int
     {
         return count($this->form_schema['fields'] ?? []);

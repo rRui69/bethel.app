@@ -59,13 +59,11 @@ Route::prefix('api/livestreams')->name('api.livestreams.')->group(function () {
 
 require __DIR__.'/auth.php';
 
-// ── Authenticated parishioner routes ───────────────────────────
+// Authenticated parishioner routes
 Route::middleware('auth')->group(function () {
-
-    // Submit sacrament (must be before {slug} wildcard — handled via POST so no conflict)
     Route::post('/sacraments/submit', [SacramentController::class, 'submit'])->name('sacraments.submit');
 
-    // Inbox — dedicated notification + message centre
+    // Inbox — dedicated notification + message
     Route::get('/inbox', [\App\Http\Controllers\InboxController::class, 'page'])->name('inbox');
     Route::prefix('api/inbox')->name('api.inbox.')->group(function () {
         Route::get('/',              [\App\Http\Controllers\InboxController::class, 'index'])->name('index');
@@ -99,12 +97,12 @@ Route::middleware('auth')->group(function () {
     });
 });
 
-// ── Admin routes ───────────────────────────────────────────────
+// Admin routes
 Route::prefix('admin')
     ->middleware(['auth', 'admin'])
     ->name('admin.')
     ->group(function () {
-
+        Route::get('',                      [DashboardController::class,           'index'])->name('dashboard');
         Route::get('/dashboard',            [DashboardController::class,           'index'])->name('dashboard');
         Route::get('/users',                [UserManagementController::class,       'page'])->name('users');
         Route::get('/announcements',        [AnnouncementController::class,         'page'])->name('announcements');
@@ -182,7 +180,7 @@ Route::prefix('admin')
                 // Misc
                 Route::post('/notifications/read', [UserManagementController::class, 'markNotificationRead'])->name('notifications.read');
 
-                // ── Clergy Management API (super_admin only, enforced in controller) ──
+                // Clergy Management API (super_admin only, enforced in controller) 
                 Route::get('/clergy/stats',                [ClergyManagementController::class, 'stats'])->name('clergy.stats');
                 Route::get('/clergy',                      [ClergyManagementController::class, 'index'])->name('clergy.index');
                 Route::post('/clergy',                     [ClergyManagementController::class, 'store'])->name('clergy.store');

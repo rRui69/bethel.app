@@ -9,9 +9,6 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 /**
  * ClergyProfile
  *
- * Holds ecclesiastical metadata for a User with role = 'clergymen'.
- * Always accessed through the User model:  $user->clergyProfile
- *
  * @property int    $id
  * @property int    $user_id
  * @property int    $parish_id
@@ -30,12 +27,12 @@ class ClergyProfile extends Model
         'parish_id',
         'title',
         'specialization',
-        // 'schedule' removed — mass slots now live in the mass_schedules table
+
     ];
 
     protected $casts = [];
 
-    // ── Relationships ────────────────────────────────────────────
+    // Relationships
 
     public function user(): BelongsTo
     {
@@ -47,11 +44,11 @@ class ClergyProfile extends Model
         return $this->belongsTo(Parish::class);
     }
 
-    // ── Helpers ──────────────────────────────────────────────────
+    // Helpers
 
     /**
      * Returns the full titled name for display purposes.
-     * Example: "Fr. Miguel Santos"
+     * Ex: "Fr. Miguel Santos"
      */
     public function getTitledNameAttribute(): string
     {

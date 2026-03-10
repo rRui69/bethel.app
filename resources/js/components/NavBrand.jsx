@@ -1,14 +1,8 @@
 import React from 'react';
 
-// ── CHANGE YOUR BRAND ICON HERE ───────────────────────────────────
-// Browse icons: https://react-icons.github.io/react-icons
-// Then swap the import and the <BrandIcon /> usage below.
-// ─────────────────────────────────────────────────────────────────
 import { FaChurch } from 'react-icons/fa6';  
 
-// ── BRAND CONFIG ──────────────────────────────────────────────────
-// Edit these values to update the brand across navbar + anywhere
-// else NavBrand is used.
+// BRAND CONFIG 
 const BRAND = {
     href:       '/',
     nameFirst:  'Bethel',
@@ -17,7 +11,7 @@ const BRAND = {
     iconColor:  '#1a3c5e',       // icon color (navy)
     badgeBg:    '#c8973a',       // icon badge background (gold)
 
-    // ── use PNG/SVG  ──
+    // use PNG/SVG  
     // 1. Drop your file in public/images/bethel-logo.png
     // 2. Set useCustomImage: true
     // 3. Set imageSrc to the path
@@ -33,10 +27,7 @@ export default function NavBrand() {
             style={{ textDecoration: 'none' }}
             >
 
-            {/* ── Icon / Logo ───────────────────────────────────────
-                Toggle between React Icon and custom PNG/SVG.
-                To switch: set BRAND.useCustomImage = true above.
-            ──────────────────────────────────────────────────────── */}
+            {/* Icon / Logo */}
             {BRAND.useCustomImage ? (
                 <img
                     src={BRAND.imageSrc}
@@ -57,7 +48,7 @@ export default function NavBrand() {
                         flexShrink:   0,
                     }}
                 >
-                    {/* ── SWAP ICON HERE ── */}
+                    {/* SWAP ICON HERE */}
                     <FaChurch
                         size={BRAND.iconSize}
                         color={BRAND.iconColor}
@@ -66,7 +57,7 @@ export default function NavBrand() {
                 </span>
             )}
 
-            {/* ── Brand Name ── */}
+            {/* Brand Name */}
             <span style={{ fontWeight: 700, fontSize: '1.3rem', letterSpacing: '-0.3px', color: '#fff' }}>
                 {BRAND.nameFirst}
                 <span style={{ color: BRAND.badgeBg }}>{BRAND.nameLast}</span>

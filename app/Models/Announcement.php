@@ -19,7 +19,7 @@ class Announcement extends Model
         'published_at' => 'datetime',
     ];
 
-    // ── Relationships ──────────────────────────────────────
+    // Relationships
     public function parish()
     {
         return $this->belongsTo(Parish::class);
@@ -30,7 +30,7 @@ class Announcement extends Model
         return $this->belongsTo(User::class, 'user_id');
     }
 
-    // ── Scopes ─────────────────────────────────────────────
+    // Scopes
     public function scopePublished($query)
     {
         return $query->where('status', 'Published');

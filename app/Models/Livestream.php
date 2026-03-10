@@ -44,7 +44,7 @@ class Livestream extends Model
         'is_archived' => 'boolean',
     ];
 
-    // ── Relationships ──────────────────────────────────────────────
+    // Relationships
 
     public function parish(): BelongsTo
     {
@@ -60,7 +60,7 @@ class Livestream extends Model
         return $this->belongsTo(User::class, 'created_by');
     }
 
-    // ── Scopes ────────────────────────────────────────────────────
+    // Scopes
 
     /**
      * Streams currently broadcasting.
@@ -105,7 +105,7 @@ class Livestream extends Model
         return $query->where('type', 'camera');
     }
 
-    // ── Accessors ─────────────────────────────────────────────────
+    // Accessors
 
     /**
      * Human-readable stream duration once ended.
@@ -146,7 +146,7 @@ class Livestream extends Model
             : null;
     }
 
-    // ── Helpers ───────────────────────────────────────────────────
+    //  Helpers
 
     /**
      * Whether this stream is a Facebook embed type.

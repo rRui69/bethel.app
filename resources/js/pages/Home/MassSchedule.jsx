@@ -1,5 +1,4 @@
 import React, { useState } from 'react';
-// ── React Icons ────────────────────────────────────────────────────────────
 import { FaSun, FaLocationDot, FaUser, FaChurch, FaCalendarXmark, FaArrowRight } from 'react-icons/fa6';
 
 const DAYS = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
