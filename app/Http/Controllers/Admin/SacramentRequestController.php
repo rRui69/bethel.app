@@ -254,6 +254,62 @@ class SacramentRequestController extends AdminBaseController
         return response()->json($clergy);
     }
 
+    // ── Mark as paid (walk-in / cash) ─────────────────────────
+    /**
+     * Admin manually marks a request as paid when the parishioner pays
+     * in person (cash/walk-in). No proof image required.
+     * Only allowed when the current payment_status is 'unpaid'.
+     */
+    public function markPaid(Request $request, SacramentRequest $sacramentRequest)
+    {
+        if ($sacramentRequest->payment_status !== 'unpaid') {
+            return response()->json([
+                'message' => 'This request already has a payment record. Use the verify/reject flow instead.',
+            ], 422);
+        }
+
+        $validated = $request->validate([
+            'amount'      => 'nullable|numeric|min:0',
+            'admin_notes' => 'nullable|string|max:500',
+        ]);
+
+        // Create a verified payment record on behalf of the parishioner
+        RequestPayment::create([
+            'sacrament_request_id' => $sacramentRequest->id,
+            'user_id'              => $sacramentRequest->user_id,
+            'method'               => 'cash',
+            'amount'               => $validated['amount'] ?? null,
+            'proof_path'           => null,   // walk-in: no uploaded proof
+            'status'               => 'verified',
+            'admin_notes'          => $validated['admin_notes'] ?? 'Marked as paid (walk-in) by admin.',
+            'verified_at'          => now(),
+            'verified_by'          => Auth::id(),
+        ]);
+
+        $sacramentRequest->update(['payment_status' => 'verified']);
+
+        // Notify parishioner
+        try {
+            Notification::insert([[
+                'user_id'         => $sacramentRequest->user_id,
+                'message'         => "Your payment for the {$sacramentRequest->sacrament_type} request has been recorded as paid (walk-in).",
+                'type'            => 'payment_update',
+                'is_read'         => false,
+                'notifiable_type' => SacramentRequest::class,
+                'notifiable_id'   => $sacramentRequest->id,
+                'created_at'      => now(),
+                'updated_at'      => now(),
+            ]]);
+        } catch (\Throwable $e) {
+            Log::warning('markPaid: notification failed', ['error' => $e->getMessage()]);
+        }
+
+        return response()->json([
+            'payment_status' => 'verified',
+            'message'        => 'Payment recorded successfully.',
+        ]);
+    }
+
     // ── Verify payment ─────────────────────────────────────────
     public function verifyPayment(Request $request, SacramentRequest $sacramentRequest)
     {

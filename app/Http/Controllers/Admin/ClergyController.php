@@ -85,8 +85,10 @@ class ClergyController extends AdminBaseController
         $records = SacramentRequest::where('assigned_clergy_id', $user->id)
             ->whereIn('status', ['approved'])
             ->with([
-                'user:id,first_name,last_name',
-                'parish:id,name',
+                'user:id,first_name,last_name,email,phone,city,barangay',
+                'parish:id,name,city',
+                'sacramentType:id,form_schema',
+                'latestPayment',
             ])
             ->orderByDesc('preferred_date')
             ->get()
@@ -94,10 +96,26 @@ class ClergyController extends AdminBaseController
                 'id'             => $req->id,
                 'sacrament_type' => $req->sacrament_type,
                 'preferred_date' => $req->preferred_date?->format('F d, Y') ?? 'N/A',
-                'parishioner'    => $req->user?->full_name ?? 'Unknown',
-                'parish'         => $req->parish?->name ?? '—',
+                'preferred_time' => $req->preferred_time ?? '—',
+                'participants'   => $req->participants,
+                'status'         => $req->status,
                 'clergy_status'  => $req->clergy_status,
+                'payment_status' => $req->latestPayment?->status ?? $req->payment_status ?? 'unpaid',
                 'admin_notes'    => $req->admin_notes,
+                'details'        => $req->details ?? [],
+                // The ordered field schema so the UI can display label → value
+                'field_schema'   => $req->sacramentType?->form_schema['fields'] ?? [],
+                'parishioner'    => [
+                    'name'     => $req->user?->full_name ?? 'Unknown',
+                    'email'    => $req->user?->email     ?? '—',
+                    'phone'    => $req->user?->phone     ?? '—',
+                    'city'     => $req->user?->city      ?? '—',
+                    'barangay' => $req->user?->barangay  ?? '—',
+                ],
+                'parish'         => [
+                    'name' => $req->parish?->name ?? '—',
+                    'city' => $req->parish?->city ?? '—',
+                ],
                 'recorded_at'    => $req->updated_at->format('M d, Y'),
             ]);
 

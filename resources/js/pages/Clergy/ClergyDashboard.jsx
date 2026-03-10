@@ -3,6 +3,7 @@ import {
     FaHandsPraying, FaBookOpen, FaCheck, FaX,
     FaChurch, FaCircleCheck, FaBan, FaCalendarDays,
     FaClock, FaUser, FaLocationDot, FaCircle,
+    FaEnvelope, FaPhone, FaUsers, FaFileLines,
 } from 'react-icons/fa6';
 
 const card = {
@@ -312,9 +313,208 @@ function AssignmentsTab({ admin }) {
     );
 }
 
+// ── Record Detail Modal ────────────────────────────────────────
+function RecordDetailModal({ record, onClose }) {
+    const sectionLabel = {
+        fontSize: '0.72rem', fontWeight: 700, textTransform: 'uppercase',
+        letterSpacing: '0.07em', color: 'var(--text-muted)',
+        marginBottom: '14px', paddingBottom: '8px',
+        borderBottom: '1px solid var(--border-color, #e5e7eb)',
+    };
+
+    const row = (Icon, label, value) => value && value !== '—' ? (
+        <div style={{ display: 'flex', alignItems: 'flex-start', gap: 10, marginBottom: 10 }}>
+            <div style={{
+                width: 30, height: 30, borderRadius: 8, flexShrink: 0,
+                background: 'var(--bg-subtle, rgba(0,0,0,0.04))',
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+            }}>
+                <Icon size={13} style={{ color: 'var(--text-muted)' }} />
+            </div>
+            <div>
+                <div style={{ fontSize: '0.72rem', color: 'var(--text-muted)', fontWeight: 600, marginBottom: 2 }}>{label}</div>
+                <div style={{ fontSize: '0.88rem', fontWeight: 500 }}>{value}</div>
+            </div>
+        </div>
+    ) : null;
+
+    const paymentColors = {
+        unpaid:    { bg: '#f1f5f9', color: '#64748b' },
+        submitted: { bg: '#fef9c3', color: '#92400e' },
+        verified:  { bg: '#d1fae5', color: '#065f46' },
+        rejected:  { bg: '#fee2e2', color: '#991b1b' },
+    };
+    const pc = paymentColors[record.payment_status] ?? paymentColors.unpaid;
+
+    // Build a map of fieldId → label from the schema
+    const schemaMap = Object.fromEntries(
+        (record.field_schema ?? []).map(f => [f.id, f])
+    );
+
+    const hasCustomDetails = record.details && Object.keys(record.details).length > 0;
+
+    return (
+        <div style={{
+            position: 'fixed', inset: 0, zIndex: 1000,
+            background: 'rgba(0,0,0,0.5)', backdropFilter: 'blur(4px)',
+            display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '24px',
+        }} onClick={onClose}>
+            <div style={{
+                background: 'var(--card-bg, #fff)', borderRadius: '16px',
+                width: '100%', maxWidth: 600, maxHeight: '90vh',
+                display: 'flex', flexDirection: 'column',
+                boxShadow: '0 25px 60px rgba(0,0,0,0.2)', overflow: 'hidden',
+            }} onClick={e => e.stopPropagation()}>
+
+                {/* Header */}
+                <div style={{
+                    padding: '24px 28px',
+                    background: 'linear-gradient(135deg, #0f2744, #2563a8)',
+                    color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+                    flexShrink: 0,
+                }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
+                        <div style={{
+                            width: 44, height: 44, borderRadius: 12,
+                            background: 'rgba(255,255,255,0.15)',
+                            display: 'flex', alignItems: 'center', justifyContent: 'center',
+                        }}>
+                            <FaBookOpen size={20} />
+                        </div>
+                        <div>
+                            <div style={{ fontWeight: 700, fontSize: '1.05rem' }}>{record.sacrament_type}</div>
+                            <div style={{ fontSize: '0.82rem', opacity: 0.75, marginTop: 2 }}>
+                                Sacramental Record · {record.recorded_at}
+                            </div>
+                        </div>
+                    </div>
+                    <button onClick={onClose} style={{
+                        width: 32, height: 32, borderRadius: 8, border: 'none',
+                        background: 'rgba(255,255,255,0.15)', color: '#fff', cursor: 'pointer',
+                        display: 'flex', alignItems: 'center', justifyContent: 'center',
+                    }}>
+                        <FaX size={13} />
+                    </button>
+                </div>
+
+                {/* Status bar */}
+                <div style={{
+                    display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap',
+                    padding: '12px 28px',
+                    background: 'var(--bg-subtle, rgba(0,0,0,0.02))',
+                    borderBottom: '1px solid var(--border-color, #e5e7eb)',
+                    flexShrink: 0,
+                }}>
+                    <Badge variant={record.status}>{record.status}</Badge>
+                    <Badge variant={record.clergy_status}>{record.clergy_status}</Badge>
+                    <span style={{
+                        fontSize: '0.72rem', fontWeight: 600,
+                        padding: '4px 10px', borderRadius: 20,
+                        background: pc.bg, color: pc.color,
+                    }}>
+                        Payment: {record.payment_status}
+                    </span>
+                </div>
+
+                {/* Scrollable body */}
+                <div style={{ flex: 1, overflowY: 'auto', padding: '24px 28px' }}>
+
+                    {/* Event details */}
+                    <div style={sectionLabel}>Event Details</div>
+                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0 24px', marginBottom: 24 }}>
+                        {row(FaCalendarDays, 'Date',         record.preferred_date)}
+                        {row(FaClock,       'Time',         record.preferred_time)}
+                        {row(FaUsers,       'Participants', record.participants > 1 ? String(record.participants) : null)}
+                        {row(FaLocationDot, 'Parish',       record.parish?.name)}
+                        {row(FaLocationDot, 'Parish City',  record.parish?.city)}
+                    </div>
+
+                    {/* Parishioner */}
+                    <div style={sectionLabel}>Parishioner</div>
+                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0 24px', marginBottom: 24 }}>
+                        {row(FaUser,    'Name',     record.parishioner?.name)}
+                        {row(FaEnvelope,'Email',    record.parishioner?.email)}
+                        {row(FaPhone,   'Phone',    record.parishioner?.phone)}
+                        {row(FaLocationDot, 'City', record.parishioner?.city)}
+                        {row(FaLocationDot, 'Barangay', record.parishioner?.barangay)}
+                    </div>
+
+                    {/* Submitted form data */}
+                    {hasCustomDetails && (
+                        <>
+                            <div style={sectionLabel}>Submitted Information</div>
+                            <div style={{
+                                background: 'var(--bg-subtle, rgba(0,0,0,0.02))',
+                                border: '1px solid var(--border-color, #e5e7eb)',
+                                borderRadius: 10, padding: '16px 20px',
+                                marginBottom: 24,
+                                display: 'flex', flexDirection: 'column', gap: 12,
+                            }}>
+                                {Object.entries(record.details).map(([key, val]) => {
+                                    const field = schemaMap[key];
+                                    const label = field?.label ?? key.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
+                                    const isImage = typeof val === 'string' && val.startsWith('http');
+                                    const display = Array.isArray(val) ? val.join(', ') : (val || '—');
+                                    return (
+                                        <div key={key}>
+                                            <div style={{ fontSize: '0.72rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.06em', color: 'var(--text-muted)', marginBottom: 4 }}>
+                                                {label}
+                                            </div>
+                                            {isImage ? (
+                                                <a href={val} target="_blank" rel="noreferrer" style={{ display: 'inline-block' }}>
+                                                    <img src={val} alt={label} style={{
+                                                        maxWidth: '100%', maxHeight: 140, borderRadius: 8,
+                                                        objectFit: 'contain', border: '1px solid #e5e7eb',
+                                                        background: '#f8fafc', display: 'block', cursor: 'zoom-in',
+                                                    }} />
+                                                </a>
+                                            ) : (
+                                                <div style={{ fontSize: '0.88rem', fontWeight: 500 }}>{display}</div>
+                                            )}
+                                        </div>
+                                    );
+                                })}
+                            </div>
+                        </>
+                    )}
+
+                    {/* Admin notes */}
+                    {record.admin_notes && (
+                        <>
+                            <div style={sectionLabel}>Admin Notes</div>
+                            <div style={{
+                                padding: '14px 16px', borderRadius: 10,
+                                background: 'rgba(245,158,11,0.06)',
+                                border: '1px solid rgba(245,158,11,0.2)',
+                                fontSize: '0.875rem', lineHeight: 1.6,
+                                color: 'var(--text-primary)',
+                            }}>
+                                {record.admin_notes}
+                            </div>
+                        </>
+                    )}
+                </div>
+
+                {/* Footer */}
+                <div style={{
+                    padding: '16px 28px', borderTop: '1px solid var(--border-color, #e5e7eb)',
+                    display: 'flex', justifyContent: 'flex-end', flexShrink: 0,
+                }}>
+                    <button onClick={onClose} style={{
+                        padding: '9px 24px', borderRadius: 8, fontSize: '0.875rem', fontWeight: 600,
+                        border: '1.5px solid var(--border-color, #d1d5db)',
+                        background: 'transparent', color: 'var(--text-color, #111)', cursor: 'pointer',
+                    }}>Close</button>
+                </div>
+            </div>
+        </div>
+    );
+}
+
 function RecordsTab() {
-    const [records, setRecords] = useState([]);
-    const [loading, setLoading] = useState(true);
+    const [records,        setRecords]        = useState([]);
+    const [loading,        setLoading]        = useState(true);
+    const [selectedRecord, setSelectedRecord] = useState(null);
 
     useEffect(() => {
         axios.get('/admin/api/clergy-records')
@@ -330,6 +530,7 @@ function RecordsTab() {
     );
 
     return (
+        <>
         <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
             {records.map(r => (
                 <div key={r.id} style={{ ...card, padding: '20px 24px', display: 'flex', alignItems: 'center', gap: '16px', flexWrap: 'wrap' }}>
@@ -344,17 +545,33 @@ function RecordsTab() {
                         <div style={{ fontWeight: 700, fontSize: '0.95rem', marginBottom: '5px' }}>{r.sacrament_type}</div>
                         <div style={{ display: 'flex', flexWrap: 'wrap', gap: '14px', fontSize: '0.82rem', color: 'var(--text-muted)' }}>
                             <span style={{ display: 'flex', alignItems: 'center', gap: '5px' }}><FaCalendarDays size={11} /> {r.preferred_date}</span>
-                            <span style={{ display: 'flex', alignItems: 'center', gap: '5px' }}><FaUser size={11} /> {r.parishioner}</span>
-                            <span style={{ display: 'flex', alignItems: 'center', gap: '5px' }}><FaLocationDot size={11} /> {r.parish}</span>
+                            <span style={{ display: 'flex', alignItems: 'center', gap: '5px' }}><FaUser size={11} /> {r.parishioner?.name ?? r.parishioner}</span>
+                            <span style={{ display: 'flex', alignItems: 'center', gap: '5px' }}><FaLocationDot size={11} /> {r.parish?.name ?? r.parish}</span>
                         </div>
                     </div>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
                         <Badge variant={r.clergy_status}>{r.clergy_status}</Badge>
                         <span style={{ fontSize: '0.76rem', color: 'var(--text-muted)', whiteSpace: 'nowrap' }}>{r.recorded_at}</span>
+                        <button
+                            onClick={() => setSelectedRecord(r)}
+                            style={{
+                                padding: '7px 16px', borderRadius: 8, fontSize: '0.82rem', fontWeight: 600,
+                                border: '1.5px solid var(--border-color, #d1d5db)',
+                                background: 'transparent', color: 'var(--text-color, #111)', cursor: 'pointer',
+                                display: 'flex', alignItems: 'center', gap: 6, whiteSpace: 'nowrap',
+                            }}
+                        >
+                            <FaFileLines size={12} /> View Details
+                        </button>
                     </div>
                 </div>
             ))}
         </div>
+
+        {selectedRecord && (
+            <RecordDetailModal record={selectedRecord} onClose={() => setSelectedRecord(null)} />
+        )}
+        </>
     );
 }
 

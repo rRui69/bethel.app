@@ -3,6 +3,7 @@ import React, { useState, useEffect, useMemo, useRef, useCallback } from 'react'
 import {
     FaCheck, FaXmark, FaMagnifyingGlass, FaX, FaPersonPraying,
     FaCreditCard, FaComment, FaPaperPlane, FaSpinner, FaChevronDown, FaPaperclip, FaUpRightFromSquare,
+    FaMoneyBillWave,
 } from 'react-icons/fa6';
 
 // ── Status Badge ───────────────────────────────────────────────
@@ -40,40 +41,69 @@ function humanize(key) {
 // ── Assign Clergy Panel (inside modal) ────────────────────────
 function AssignClergyPanel({ requestId, current, onAssigned }) {
     const [clergy,    setClergy]    = useState([]);
-    const [selected,  setSelected]  = useState(current?.id ?? '');
+    const [selected,  setSelected]  = useState(current?.id ? String(current.id) : '');
     const [saving,    setSaving]    = useState(false);
-    const [loaded,    setLoaded]    = useState(false);
+    const [fetchErr,  setFetchErr]  = useState('');
+    const [assignErr, setAssignErr] = useState('');
+    const [success,   setSuccess]   = useState('');
 
+    // Load available clergy every time the panel mounts (fresh on each modal open)
     useEffect(() => {
-        if (loaded) return;
-        setLoaded(true);
+        setFetchErr('');
         axios.get(`/admin/api/sacrament-requests/${requestId}/available-clergy`)
             .then(r => setClergy(r.data))
-            .catch(() => {});
-    }, []);
+            .catch(e => {
+                const msg = e.response?.data?.message ?? 'Failed to load available clergy.';
+                setFetchErr(msg);
+            });
+    }, [requestId]);
 
     const assign = async () => {
-        if (!selected) return;
+        const numericId = parseInt(selected, 10);
+        if (!numericId) return;
         setSaving(true);
+        setAssignErr('');
+        setSuccess('');
         try {
-            const r = await axios.post(`/admin/api/sacrament-requests/${requestId}/assign-clergy`, { clergy_id: selected });
+            const r = await axios.post(
+                `/admin/api/sacrament-requests/${requestId}/assign-clergy`,
+                { clergy_id: numericId }
+            );
+            setSuccess('Clergy assigned successfully.');
             onAssigned(r.data);
-        } catch { alert('Failed to assign clergy.'); }
-        finally { setSaving(false); }
+        } catch (e) {
+            // Extract the most useful error — validation errors come back as errors.clergy_id[0]
+            const errBag   = e.response?.data?.errors;
+            const specific = errBag?.clergy_id?.[0] ?? errBag?.[Object.keys(errBag ?? {})[0]]?.[0];
+            const fallback = e.response?.data?.message ?? 'Failed to assign clergy. Please try again.';
+            setAssignErr(specific ?? fallback);
+        } finally { setSaving(false); }
     };
 
     return (
         <div style={{ marginTop: '0.5rem' }}>
+            {/* Fetch error */}
+            {fetchErr && (
+                <div style={{
+                    padding: '8px 12px', borderRadius: 6, marginBottom: 10,
+                    background: 'rgba(239,68,68,0.08)', color: '#dc2626',
+                    fontSize: '0.8rem', border: '1px solid rgba(239,68,68,0.2)',
+                }}>
+                    {fetchErr}
+                </div>
+            )}
+
             <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
                 <select
                     value={selected}
-                    onChange={e => setSelected(e.target.value)}
+                    onChange={e => { setSelected(e.target.value); setAssignErr(''); setSuccess(''); }}
                     className="um-input"
                     style={{ flex: 1, minWidth: 200, fontSize: '0.82rem', padding: '0.4rem 0.6rem' }}
+                    disabled={saving}
                 >
                     <option value="">— Select clergy —</option>
                     {clergy.map(c => (
-                        <option key={c.id} value={c.id}>
+                        <option key={c.id} value={String(c.id)}>
                             {c.name} ({c.parish})
                         </option>
                     ))}
@@ -84,9 +114,32 @@ function AssignClergyPanel({ requestId, current, onAssigned }) {
                     disabled={saving || !selected}
                     style={{ padding: '0.4rem 0.9rem', fontSize: '0.82rem' }}
                 >
-                    {saving ? <FaSpinner size={11} /> : 'Assign'}
+                    {saving ? <FaSpinner size={11} /> : current ? 'Reassign' : 'Assign'}
                 </button>
             </div>
+
+            {/* Assignment error */}
+            {assignErr && (
+                <div style={{
+                    padding: '8px 12px', borderRadius: 6, marginTop: 8,
+                    background: 'rgba(239,68,68,0.08)', color: '#dc2626',
+                    fontSize: '0.8rem', border: '1px solid rgba(239,68,68,0.2)',
+                }}>
+                    {assignErr}
+                </div>
+            )}
+
+            {/* Success feedback */}
+            {success && (
+                <div style={{
+                    padding: '8px 12px', borderRadius: 6, marginTop: 8,
+                    background: 'rgba(16,185,129,0.08)', color: '#065f46',
+                    fontSize: '0.8rem', border: '1px solid rgba(16,185,129,0.2)',
+                    display: 'flex', alignItems: 'center', gap: 6,
+                }}>
+                    <FaCheck size={11} /> {success}
+                </div>
+            )}
         </div>
     );
 }
@@ -330,6 +383,125 @@ function PaymentVerifyPanel({ requestId, payment, onVerified }) {
     );
 }
 
+// ── Mark as Paid Panel (walk-in / cash) ───────────────────────
+function MarkAsPaidPanel({ requestId, onMarkedPaid }) {
+    const [amount,   setAmount]   = useState('');
+    const [note,     setNote]     = useState('');
+    const [saving,   setSaving]   = useState(false);
+    const [err,      setErr]      = useState('');
+    const [expanded, setExpanded] = useState(false);
+
+    const submit = async () => {
+        setSaving(true);
+        setErr('');
+        try {
+            await axios.post(`/admin/api/sacrament-requests/${requestId}/mark-paid`, {
+                amount:      amount ? parseFloat(amount) : null,
+                admin_notes: note || null,
+            });
+            onMarkedPaid();
+        } catch (e) {
+            const msg = e.response?.data?.message ?? 'Failed to record payment.';
+            setErr(msg);
+        } finally { setSaving(false); }
+    };
+
+    if (!expanded) {
+        return (
+            <div style={{ marginTop: '1rem', paddingTop: '1rem', borderTop: '1px dashed var(--border-color, #e5e7eb)' }}>
+                <button
+                    onClick={() => setExpanded(true)}
+                    style={{
+                        display: 'inline-flex', alignItems: 'center', gap: 7,
+                        padding: '8px 16px', borderRadius: 8, fontSize: '0.83rem', fontWeight: 600,
+                        border: '1.5px solid #16a34a', color: '#16a34a',
+                        background: 'rgba(22,163,74,0.06)', cursor: 'pointer',
+                    }}
+                >
+                    💵 Mark as Paid (Walk-in / Cash)
+                </button>
+                <p style={{ marginTop: 6, fontSize: '0.75rem', color: 'var(--text-muted)' }}>
+                    Use this for parishioners who paid in person. No proof image required.
+                </p>
+            </div>
+        );
+    }
+
+    return (
+        <div style={{
+            marginTop: '1rem', padding: '1rem', borderRadius: 10,
+            border: '1.5px solid rgba(22,163,74,0.3)',
+            background: 'rgba(22,163,74,0.04)',
+        }}>
+            <div style={{ fontWeight: 700, fontSize: '0.85rem', marginBottom: '0.75rem', color: '#15803d' }}>
+                💵 Record Walk-in Payment
+            </div>
+            <div style={{ display: 'flex', gap: 10, marginBottom: 10, flexWrap: 'wrap' }}>
+                <div style={{ flex: 1, minWidth: 140 }}>
+                    <label style={{ display: 'block', fontSize: '0.75rem', fontWeight: 600, color: 'var(--text-muted)', marginBottom: 4 }}>
+                        Amount (₱) <span style={{ fontWeight: 400 }}>— optional</span>
+                    </label>
+                    <input
+                        type="number" min="0" step="0.01"
+                        placeholder="e.g. 500"
+                        value={amount}
+                        onChange={e => setAmount(e.target.value)}
+                        className="um-input"
+                        style={{ fontSize: '0.85rem', padding: '0.4rem 0.6rem' }}
+                    />
+                </div>
+                <div style={{ flex: 2, minWidth: 180 }}>
+                    <label style={{ display: 'block', fontSize: '0.75rem', fontWeight: 600, color: 'var(--text-muted)', marginBottom: 4 }}>
+                        Note <span style={{ fontWeight: 400 }}>— optional</span>
+                    </label>
+                    <input
+                        type="text"
+                        placeholder="e.g. Paid at parish office"
+                        value={note}
+                        onChange={e => setNote(e.target.value)}
+                        className="um-input"
+                        style={{ fontSize: '0.85rem', padding: '0.4rem 0.6rem' }}
+                    />
+                </div>
+            </div>
+            {err && (
+                <div style={{
+                    padding: '7px 12px', borderRadius: 6, marginBottom: 10,
+                    background: 'rgba(239,68,68,0.08)', color: '#dc2626',
+                    fontSize: '0.8rem', border: '1px solid rgba(239,68,68,0.2)',
+                }}>
+                    {err}
+                </div>
+            )}
+            <div style={{ display: 'flex', gap: 8 }}>
+                <button
+                    onClick={() => { setExpanded(false); setErr(''); setAmount(''); setNote(''); }}
+                    disabled={saving}
+                    style={{
+                        padding: '7px 14px', borderRadius: 7, fontSize: '0.82rem', fontWeight: 500,
+                        border: '1.5px solid var(--border-color, #d1d5db)', background: 'transparent',
+                        color: 'var(--text-muted)', cursor: 'pointer',
+                    }}
+                >
+                    Cancel
+                </button>
+                <button
+                    onClick={submit}
+                    disabled={saving}
+                    style={{
+                        padding: '7px 18px', borderRadius: 7, fontSize: '0.82rem', fontWeight: 700,
+                        border: 'none', background: '#16a34a', color: '#fff',
+                        cursor: 'pointer', opacity: saving ? 0.7 : 1,
+                        display: 'flex', alignItems: 'center', gap: 6,
+                    }}
+                >
+                    <FaCheck size={11} /> {saving ? 'Recording…' : 'Confirm Payment'}
+                </button>
+            </div>
+        </div>
+    );
+}
+
 // ── Detail Modal ──────────────────────────────────────────────
 function SacramentRequestDetailModal({ requestId, onClose, onStatusChange }) {
     const [data,       setData]       = useState(null);
@@ -568,9 +740,17 @@ function SacramentRequestDetailModal({ requestId, onClose, onStatusChange }) {
                                             setData(prev => ({
                                                 ...prev,
                                                 assigned_clergy: res.assigned_clergy,
-                                                clergy_status: res.clergy_status,
+                                                clergy_status:   res.clergy_status,
                                             }));
-                                            if (onStatusChange) onStatusChange(requestId, data.status);
+                                            // Pass clergy update to the parent table row.
+                                            // We use a special shape so the parent can patch
+                                            // clergy_status + assigned_clergy on the right row.
+                                            if (onStatusChange) {
+                                                onStatusChange(requestId, null, {
+                                                    clergy_status:   res.clergy_status,
+                                                    assigned_clergy: res.assigned_clergy,
+                                                });
+                                            }
                                         }}
                                     />
                                 </div>
@@ -602,6 +782,17 @@ function SacramentRequestDetailModal({ requestId, onClose, onStatusChange }) {
                                         </>
                                     ) : (
                                         <p style={{ fontSize: '0.82rem', color: '#9ca3af' }}>No payment submitted yet.</p>
+                                    )}
+
+                                    {/* Walk-in / cash payment — only when still unpaid */}
+                                    {data.payment_status === 'unpaid' && (
+                                        <MarkAsPaidPanel
+                                            requestId={requestId}
+                                            onMarkedPaid={() => {
+                                                setData(prev => ({ ...prev, payment_status: 'verified' }));
+                                                if (onStatusChange) onStatusChange(requestId, data.status);
+                                            }}
+                                        />
                                     )}
                                 </div>
                             )}
@@ -678,9 +869,21 @@ export default function SacramentRequests({ onStatsRefresh }) {
             if (!fromModal) {
                 await axios.patch(`/admin/api/sacrament-requests/${id}`, { status: newStatus });
             }
-            setRequests(prev => prev.map(req => req.id === id ? { ...req, status: newStatus } : req));
+            if (newStatus !== null) {
+                setRequests(prev => prev.map(req =>
+                    req.id === id ? { ...req, status: newStatus } : req
+                ));
+            }
             if (onStatsRefresh) onStatsRefresh();
         } catch { alert('Failed to update status.'); }
+    };
+
+    // Called from the modal when clergy is successfully assigned — patches the
+    // relevant table row in place so the UI reflects the change immediately.
+    const handleClergyAssigned = (id, patch) => {
+        setRequests(prev => prev.map(req =>
+            req.id === id ? { ...req, ...patch } : req
+        ));
     };
 
     const filteredRequests = useMemo(() => {
@@ -786,9 +989,15 @@ export default function SacramentRequests({ onStatsRefresh }) {
                 <SacramentRequestDetailModal
                     requestId={detailId}
                     onClose={() => setDetailId(null)}
-                    onStatusChange={(id, status) => {
-                        handleStatusChange(id, status, true);
-                        if (onStatsRefresh) onStatsRefresh();
+                    onStatusChange={(id, status, clergyPatch) => {
+                        if (clergyPatch) {
+                            // Clergy assignment update — patch clergy fields in the row
+                            handleClergyAssigned(id, clergyPatch);
+                        } else {
+                            // Status change from inside the modal
+                            handleStatusChange(id, status, true);
+                            if (onStatsRefresh) onStatsRefresh();
+                        }
                     }}
                 />
             )}

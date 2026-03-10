@@ -175,6 +175,7 @@ Route::prefix('admin')
                 Route::post('/sacrament-requests/{sacramentRequest}/assign-clergy',    [AdminSacramentRequestController::class, 'assignClergy'])->name('sacrament-requests.assign-clergy');
                 Route::get('/sacrament-requests/{sacramentRequest}/available-clergy',  [AdminSacramentRequestController::class, 'availableClergy'])->name('sacrament-requests.available-clergy');
                 Route::post('/sacrament-requests/{sacramentRequest}/verify-payment',   [AdminSacramentRequestController::class, 'verifyPayment'])->name('sacrament-requests.verify-payment');
+                Route::post('/sacrament-requests/{sacramentRequest}/mark-paid',        [AdminSacramentRequestController::class, 'markPaid'])->name('sacrament-requests.mark-paid');
                 Route::get('/sacrament-requests/{sacramentRequest}/messages',          [AdminSacramentRequestController::class, 'messages'])->name('sacrament-requests.messages');
                 Route::post('/sacrament-requests/{sacramentRequest}/messages',         [AdminSacramentRequestController::class, 'sendMessage'])->name('sacrament-requests.messages.send');
 

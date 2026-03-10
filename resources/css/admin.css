@@ -1752,7 +1752,7 @@ body {
     border-color: #ef4444;
 }
 
-/* Disabled pagination / action buttons */
+/* Disabled action buttons */
 .admin-shell .btn:disabled,
 .admin-shell .btn[disabled] {
     opacity: 0.35;
@@ -1802,16 +1802,15 @@ body {
     transition: opacity 0.15s;
     font-size: 0.75rem;
 }
-.sr-action-btn:hover { opacity: 0.75; }
-.sr-action-btn--approve { background: rgba(16,185,129,0.15); color: #059669; }
-.sr-action-btn--reject  { background: rgba(239,68,68,0.15);  color: #dc2626; }
+.sr-action-btn:hover { opacity: 1; }
+.sr-action-btn--approve { background: rgba(16, 185, 129, 0.35); color: #059669; }
+.sr-action-btn--reject  { background: rgba(239,68,68,0.35);  color: #dc2626; }
 
 /* ── Sacrament Requests: status-based row coloring ──────────────────── */
-/* Applied to <td> so they override the generic tr:hover td rule         */
-.admin-table tbody tr.sr-row--pending  td { background: rgba(245,158,11,0.05);  }
-.admin-table tbody tr.sr-row--approved td { background: rgba(16,185,129,0.05); }
-.admin-table tbody tr.sr-row--rejected td { background: rgba(239,68,68,0.05);  }
+.admin-table tbody tr.sr-row--pending  td { background: rgba(255, 178, 45, 0.1);  }
+.admin-table tbody tr.sr-row--approved td { background: rgba(16, 185, 129, 0.1); }
+.admin-table tbody tr.sr-row--rejected td { background: rgba(239, 68, 68, 0.1);  }
 
-.admin-table tbody tr.sr-row--pending:hover  td { background: rgba(245,158,11,0.12);  }
-.admin-table tbody tr.sr-row--approved:hover td { background: rgba(16,185,129,0.12); }
-.admin-table tbody tr.sr-row--rejected:hover td { background: rgba(239,68,68,0.10);  }
+.admin-table tbody tr.sr-row--pending:hover  td { background: rgba(245, 159, 11, 0.35);  }
+.admin-table tbody tr.sr-row--approved:hover td { background: rgba(16, 185, 129, 0.35); }
+.admin-table tbody tr.sr-row--rejected:hover td { background: rgba(239, 68, 68, 0.35);  }
