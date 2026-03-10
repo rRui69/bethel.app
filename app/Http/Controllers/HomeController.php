@@ -8,6 +8,7 @@ use App\Models\Event;
 use App\Models\User;
 use App\Models\MassSchedule;
 use Carbon\Carbon;
+use App\Models\Livestream;
 
 class HomeController extends Controller
 {
@@ -111,7 +112,22 @@ class HomeController extends Controller
             ])
             ->toArray();
 
-        $pageData = compact('parishes', 'announcements', 'schedules', 'events');
+            // ── Active Livestreams — for homepage widget ───────────────
+            $activeStreams = Livestream::where('status', 'live')
+                ->select('id', 'title', 'description', 'type', 'facebook_url', 'agora_channel')
+                ->latest('started_at')
+                ->get()
+                ->map(fn ($s) => [
+                    'id'             => $s->id,
+                    'title'          => $s->title,
+                    'description'    => $s->description,
+                    'type'           => $s->type,
+                    'facebook_url'   => $s->facebook_url,
+                    'agora_channel'  => $s->agora_channel,
+                ])
+                ->toArray();
+
+        $pageData = compact('parishes', 'announcements', 'schedules', 'events', 'activeStreams');
 
         return view('parishioner.home', compact('pageData'));
     }
