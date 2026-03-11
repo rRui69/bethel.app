@@ -6,7 +6,7 @@ export default function ParishTable({ parishes = [] }) {
 
     const filtered = parishes.filter(p =>
         p.name.toLowerCase().includes(search.toLowerCase()) ||
-        p.location.toLowerCase().includes(search.toLowerCase())
+        (p.location ?? '').toLowerCase().includes(search.toLowerCase())
     );
 
     return (
@@ -44,7 +44,7 @@ export default function ParishTable({ parishes = [] }) {
                             <th>#</th>
                             <th>Parish Name</th>
                             <th>Location</th>
-                            <th>Parishioners</th>
+                            <th>Users</th>
                             <th>Pending Requests</th>
                             <th>Status</th>
                             <th>Action</th>
@@ -68,7 +68,7 @@ export default function ParishTable({ parishes = [] }) {
                                             {parish.name}
                                         </span>
                                     </td>
-                                    <td>{parish.location}</td>
+                                    <td style={{ fontSize: '0.83rem' }}>{parish.location ?? '—'}</td>
                                     <td>
                                         <span style={{ fontWeight: 600, color: 'var(--text-primary)' }}>
                                             {Number(parish.parishioners ?? 0).toLocaleString()}
@@ -90,7 +90,7 @@ export default function ParishTable({ parishes = [] }) {
                                     </td>
                                     <td>
                                         <a
-                                            href={`/admin/parishes/${parish.id}`}
+                                            href="/admin/parishes"
                                             style={{
                                                 display: 'inline-flex',
                                                 alignItems: 'center',

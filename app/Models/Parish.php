@@ -4,6 +4,7 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class Parish extends Model
 {
@@ -16,6 +17,11 @@ class Parish extends Model
     ];
 
     // Relationships
+    public function users(): HasMany
+    {
+        return $this->hasMany(User::class);
+    }
+
     public function clergyProfiles()
     {
         return $this->hasMany(ClergyProfile::class);
@@ -71,8 +77,6 @@ class Parish extends Model
 
     public function getParishionersCountAttribute(): int
     {
-        // Once parish_id is added to users table, this becomes:
-        // return $this->users()->count();
-        return 0; // placeholder until User gets parish_id
+        return $this->users()->where('role', 'parishioner')->count();
     }
 }

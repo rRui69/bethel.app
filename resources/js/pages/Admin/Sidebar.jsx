@@ -4,7 +4,7 @@ import {
     FaBullhorn, FaChurch, FaChevronLeft,
     FaChevronRight, FaUserGear, FaWandMagicSparkles,
     FaRightFromBracket, FaPersonPraying, FaBookOpen,
-    FaCalendarCheck, FaTowerBroadcast,
+    FaCalendarCheck, FaTowerBroadcast, FaMapLocationDot,
 } from 'react-icons/fa6';
 
 const NAV_SECTIONS = [
@@ -45,6 +45,14 @@ const NAV_SECTIONS = [
                 label: 'Clergy Management',
                 icon:  FaChurch,
                 href:  '/admin/clergy',
+                badge: null,
+                roles: ['super_admin'],
+            },
+            {
+                id:    'parishes',
+                label: 'Parish Management',
+                icon:  FaMapLocationDot,
+                href:  '/admin/parishes',
                 badge: null,
                 roles: ['super_admin'],
             },

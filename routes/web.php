@@ -20,6 +20,7 @@ use App\Http\Controllers\SacramentController;
 use App\Http\Controllers\Admin\SacramentTypeController;
 use App\Http\Controllers\LivestreamController;
 use App\Http\Controllers\Admin\LivestreamController as AdminLivestreamController;
+use App\Http\Controllers\Admin\ParishController;
 
 Route::get('/', [HomeController::class, 'index'])->name('home');
 
@@ -84,6 +85,7 @@ Route::middleware('auth')->group(function () {
     Route::prefix('api/bookings')->name('api.bookings.')->group(function () {
         Route::get('/',                                        [BookingController::class, 'index'])->name('index');
         Route::get('/{sacramentRequest}',                      [BookingController::class, 'show'])->name('show');
+        Route::get('/{sacramentRequest}/certificate',          [BookingController::class, 'certificate'])->name('certificate');
         Route::post('/{sacramentRequest}/payment',             [BookingController::class, 'submitPayment'])->name('payment');
         Route::post('/{sacramentRequest}/clergy-respond',      [BookingController::class, 'respondClergy'])->name('clergy-respond');
         Route::get('/{sacramentRequest}/messages',             [BookingController::class, 'messages'])->name('messages');
@@ -102,6 +104,7 @@ Route::prefix('admin')
     ->middleware(['auth', 'admin'])
     ->name('admin.')
     ->group(function () {
+        Route::get('',                      [DashboardController::class,           'index'])->name('dashboard');
         Route::get('/dashboard',            [DashboardController::class,           'index'])->name('dashboard');
         Route::get('/users',                [UserManagementController::class,       'page'])->name('users');
         Route::get('/announcements',        [AnnouncementController::class,         'page'])->name('announcements');
@@ -124,6 +127,9 @@ Route::prefix('admin')
 
         // Livestreams
         Route::get('/livestreams',          [AdminLivestreamController::class,'page'])->name('livestreams');
+
+        // Parish Management
+        Route::get('/parishes',             [ParishController::class, 'page'])->name('parishes');
 
         Route::prefix('api')
             ->middleware('throttle:60,1')
@@ -173,6 +179,7 @@ Route::prefix('admin')
                 Route::get('/sacrament-requests/{sacramentRequest}/available-clergy',  [AdminSacramentRequestController::class, 'availableClergy'])->name('sacrament-requests.available-clergy');
                 Route::post('/sacrament-requests/{sacramentRequest}/verify-payment',   [AdminSacramentRequestController::class, 'verifyPayment'])->name('sacrament-requests.verify-payment');
                 Route::post('/sacrament-requests/{sacramentRequest}/mark-paid',        [AdminSacramentRequestController::class, 'markPaid'])->name('sacrament-requests.mark-paid');
+                Route::get('/sacrament-requests/{sacramentRequest}/certificate',       [AdminSacramentRequestController::class, 'certificate'])->name('sacrament-requests.certificate');
                 Route::get('/sacrament-requests/{sacramentRequest}/messages',          [AdminSacramentRequestController::class, 'messages'])->name('sacrament-requests.messages');
                 Route::post('/sacrament-requests/{sacramentRequest}/messages',         [AdminSacramentRequestController::class, 'sendMessage'])->name('sacrament-requests.messages.send');
 
@@ -216,5 +223,16 @@ Route::prefix('admin')
 
                 // Agora publisher token
                 Route::post('/livestreams/publisher-token',         [AdminLivestreamController::class, 'publisherToken'])->name('livestreams.publisher-token');
+
+                // Parish Management (super_admin only — enforced in controller)
+                Route::get('/parishes',                                    [ParishController::class, 'index'])->name('parishes.index');
+                Route::post('/parishes',                                   [ParishController::class, 'store'])->name('parishes.store');
+                Route::get('/parishes/{parish}',                           [ParishController::class, 'show'])->name('parishes.show');
+                Route::patch('/parishes/{parish}',                         [ParishController::class, 'update'])->name('parishes.update');
+                Route::delete('/parishes/{parish}',                        [ParishController::class, 'destroy'])->name('parishes.destroy');
+                Route::get('/parishes/{parish}/users',                     [ParishController::class, 'users'])->name('parishes.users');
+                Route::get('/parishes/{parish}/available-users',           [ParishController::class, 'availableUsers'])->name('parishes.available-users');
+                Route::post('/parishes/{parish}/assign-user',              [ParishController::class, 'assignUser'])->name('parishes.assign-user');
+                Route::delete('/parishes/{parish}/users/{user}',           [ParishController::class, 'removeUser'])->name('parishes.remove-user');
             });
     });

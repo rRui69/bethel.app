@@ -12,10 +12,11 @@ class DashboardController extends AdminBaseController
         $adminData = $this->adminShellData();
         $user = auth()->user();
 
-        // 1. Base query to fetch parishes and their pending sacramental requests
+        // 1. Base query — fetch parishes with counts
         $query = Parish::select('id', 'name', 'city', 'status')
             ->withCount([
                 'events as pending_requests' => fn ($q) => $q->sacramental()->pending(),
+                'users as users_count',
             ]);
 
         // 2. SECURITY: Tenant Isolation
@@ -32,6 +33,7 @@ class DashboardController extends AdminBaseController
                 'name'             => $parish->name,
                 'location'         => $parish->city,
                 'status'           => $parish->status,
+                'parishioners'     => $parish->users_count,
                 'pending_requests' => $parish->pending_requests,
             ])
             ->toArray();
