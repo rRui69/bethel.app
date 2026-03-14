@@ -3,7 +3,7 @@
 @section('title', 'Mass Schedule')
 @section('meta_description', 'View weekly mass schedules across all parishes in the diocese.')
 
-@push('head')
+@push('preload')
 <script>
     window.__PAGE_DATA__ = {!! json_encode($pageData) !!};
 </script>

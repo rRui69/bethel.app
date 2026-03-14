@@ -3,7 +3,7 @@
 @section('title', $pageData['sacramentType']['name'] . ' Request')
 @section('meta_description', 'Submit a ' . $pageData['sacramentType']['name'] . ' request to your parish.')
 
-@push('head')
+@push('preload')
 <script>
     window.__PAGE_DATA__ = {!! json_encode($pageData) !!};
 </script>

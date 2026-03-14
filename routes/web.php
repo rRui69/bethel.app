@@ -21,8 +21,18 @@ use App\Http\Controllers\Admin\SacramentTypeController;
 use App\Http\Controllers\LivestreamController;
 use App\Http\Controllers\Admin\LivestreamController as AdminLivestreamController;
 use App\Http\Controllers\Admin\ParishController;
+use App\Http\Controllers\PublicParishController;
+use App\Http\Controllers\PublicClergyController;
 
 Route::get('/', [HomeController::class, 'index'])->name('home');
+
+// ── Public parish pages ───────────────────────────────────────────────────────
+Route::get('/parish/{parish}',       [PublicParishController::class, 'show'])->name('parish.show');
+Route::get('/api/public/parish/{parish}', [PublicParishController::class, 'data'])->name('api.parish.data');
+
+// ── Public clergy profile pages ───────────────────────────────────────────────
+Route::get('/parish/{parish}/clergy/{user}',       [PublicClergyController::class, 'show'])->name('clergy.show');
+Route::get('/api/public/parish/{parish}/clergy/{user}', [PublicClergyController::class, 'data'])->name('api.clergy.data');
 
 // Public APIs — no auth required
 Route::get('/api/sacrament-types', [SacramentTypeController::class, 'publicIndex'])->name('api.sacrament-types.public');

@@ -1,7 +1,7 @@
 @extends('layouts.admin')
 @section('title', 'Livestreams')
 
-@push('head')
+@push('preload')
 <script>
     window.__ADMIN_DATA__ = {!! json_encode($adminData) !!};
 </script>

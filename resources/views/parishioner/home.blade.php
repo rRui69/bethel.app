@@ -1,18 +1,17 @@
 @extends('layouts.app')
 
-@section('title', 'Home')
+@section('title', 'Find Your Parish — BethelApp')
 @section('meta_description', 'BethelApp — Find your parish, view mass schedules, announcements, and book sacramental appointments.')
 
 @section('content')
 
-    {{-- Pass PHP data to React via window object --}}
-    @push('head')
+    @push('preload')
     <script>
         window.__PAGE_DATA__ = {!! json_encode($pageData) !!};
     </script>
     @endpush
 
-    {{-- React root: Home page here --}}
+    {{-- Hero search only — parish details live on /parish/{id} --}}
     <div id="bethel-home"></div>
 
 @endsection

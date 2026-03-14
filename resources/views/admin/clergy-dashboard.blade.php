@@ -1,11 +1,13 @@
 @extends('layouts.admin')
-@section('title', 'My Assignments')
 
-@push('head')
+@section('title', 'User Management')
+
+@push('preload')
 <script>
-    window.__ADMIN_DATA__ = {!! json_encode($adminData) !!};
+    window.__ADMIN_DATA__ = {{ Js::from($adminData) }};
 </script>
 @endpush
 
 @section('content')
+
 @endsection

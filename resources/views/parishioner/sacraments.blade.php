@@ -3,7 +3,7 @@
 @section('title', 'Sacraments')
 @section('meta_description', 'Book a sacramental appointment with your parish — Baptism, Wedding, Confirmation, and more.')
 
-@push('head')
+@push('preload')
 <script>
     window.__PAGE_DATA__ = {!! json_encode($pageData) !!};
 </script>

@@ -3,7 +3,7 @@
 @section('title', 'Inbox')
 @section('meta_description', 'Your notifications and message threads from parish staff.')
 
-@push('head')
+@push('preload')
 <script>
     window.__PAGE_DATA__ = {!! json_encode($pageData) !!};
 </script>

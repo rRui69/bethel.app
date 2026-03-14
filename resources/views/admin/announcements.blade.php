@@ -2,7 +2,7 @@
 
 @section('title', 'Parish Announcements')
 
-@push('head')
+@push('preload')
 <script>
     window.__ADMIN_DATA__ = {{ Js::from($adminData) }};
 </script>

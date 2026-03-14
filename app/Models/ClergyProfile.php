@@ -27,7 +27,8 @@ class ClergyProfile extends Model
         'parish_id',
         'title',
         'specialization',
-
+        'bio',
+        'image_url',
     ];
 
     protected $casts = [];

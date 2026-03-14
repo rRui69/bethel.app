@@ -1,14 +1,14 @@
 @extends('layouts.app')
 
-@section('title', 'Upcoming Events')
-@section('meta_description', 'Browse upcoming community, liturgical, and youth events across the diocese.')
+@section('title', 'Mass Schedule')
+@section('meta_description', 'View weekly mass schedules across all parishes in the diocese.')
 
-@push('head')
+@push('preload')
 <script>
     window.__PAGE_DATA__ = {!! json_encode($pageData) !!};
 </script>
 @endpush
 
 @section('content')
-    <div id="bethel-events-page"></div>
+    <div id="bethel-mass-schedule-page"></div>
 @endsection

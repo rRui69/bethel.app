@@ -90,6 +90,9 @@ export default function HeroBanner({ parishes = [] }) {
 
     function handleKeyDown(e) {
         if (e.key === 'Escape') setOpen(false);
+        if (e.key === 'Enter' && selected) {
+            window.location.href = `/parish/${selected.id}`;
+        }
     }
 
     // Determine which background mode is active
@@ -187,7 +190,7 @@ export default function HeroBanner({ parishes = [] }) {
                                         color:        'var(--bethel-primary)',
                                         borderRadius: '0 0.5rem 0.5rem 0',
                                     }}
-                                    onClick={() => selected && (window.location.href = `/parishes/${selected.id}`)}
+                                    onClick={() => selected && (window.location.href = `/parish/${selected.id}`)}
                                 >
                                     Find Parish
                                 </button>

@@ -888,3 +888,1159 @@ z-index:1;
 [data-theme="dark"] .offcanvas {
     background: #0f1923 !important;
 }
+/* ═══════════════════════════════════════════════════════════════
+   PARISH PAGE
+   ═══════════════════════════════════════════════════════════════ */
+
+/* ── Parish Header ──────────────────────────────────────────── */
+.parish-header {
+    background: var(--bg-card, #fff);
+    border-bottom: 1px solid rgba(0,0,0,0.07);
+}
+
+.parish-header__carousel {
+    position: relative;
+    height: 420px;
+    overflow: hidden;
+    background: #0f2744;
+}
+
+@media (max-width: 576px) {
+    .parish-header__carousel { height: 260px; }
+}
+
+.parish-header__img {
+    position: absolute;
+    inset: 0;
+    background-size: cover;
+    background-position: center;
+    transition: opacity 0.3s ease;
+}
+
+.parish-header__img--fading { opacity: 0; }
+
+.parish-header__overlay {
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(
+        to bottom,
+        rgba(10,27,56,0.35) 0%,
+        rgba(10,27,56,0.70) 60%,
+        rgba(10,27,56,0.85) 100%
+    );
+    z-index: 1;
+}
+
+.parish-header__identity {
+    position: absolute;
+    bottom: 32px;
+    left: 50%;
+    transform: translateX(-50%);
+    z-index: 2;
+    text-align: center;
+    width: 100%;
+    padding: 0 1rem;
+}
+
+.parish-header__icon-wrap {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 56px;
+    height: 56px;
+    border-radius: 14px;
+    background: rgba(255,255,255,0.15);
+    backdrop-filter: blur(6px);
+    color: #fff;
+    margin-bottom: 12px;
+}
+
+.parish-header__name {
+    font-size: clamp(1.5rem, 4vw, 2.4rem);
+    font-weight: 800;
+    color: #fff;
+    margin: 0 0 6px;
+    text-shadow: 0 2px 12px rgba(0,0,0,0.4);
+    line-height: 1.2;
+}
+
+.parish-header__diocese {
+    font-size: 0.875rem;
+    color: rgba(255,255,255,0.75);
+    margin: 0;
+    letter-spacing: 0.02em;
+}
+
+/* Carousel arrows */
+.parish-header__arrow {
+    position: absolute;
+    top: 50%;
+    transform: translateY(-50%);
+    z-index: 3;
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    border: none;
+    background: rgba(255,255,255,0.2);
+    backdrop-filter: blur(4px);
+    color: #fff;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: background 0.2s;
+}
+
+.parish-header__arrow:hover { background: rgba(255,255,255,0.35); }
+.parish-header__arrow--left  { left: 16px; }
+.parish-header__arrow--right { right: 16px; }
+
+/* Dots */
+.parish-header__dots {
+    position: absolute;
+    bottom: 14px;
+    right: 20px;
+    z-index: 3;
+    display: flex;
+    gap: 6px;
+}
+
+.parish-header__dot {
+    width: 7px;
+    height: 7px;
+    border-radius: 50%;
+    border: none;
+    background: rgba(255,255,255,0.4);
+    cursor: pointer;
+    padding: 0;
+    transition: background 0.2s, transform 0.2s;
+}
+
+.parish-header__dot.active {
+    background: #fff;
+    transform: scale(1.3);
+}
+
+/* Info strip */
+.parish-header__info-strip {
+    background: var(--bethel-primary);
+    padding: 10px 0;
+}
+
+.parish-header__info-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 20px;
+    align-items: center;
+    justify-content: center;
+}
+
+.parish-header__info-item {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    color: rgba(255,255,255,0.85);
+    font-size: 0.82rem;
+}
+
+/* Description */
+.parish-header__desc-wrap {
+    padding: 20px 0 8px;
+}
+
+.parish-header__desc {
+    font-size: 0.93rem;
+    color: var(--text-muted, #6b7280);
+    max-width: 720px;
+    margin: 0 auto;
+    text-align: center;
+    line-height: 1.65;
+}
+
+/* Quick-nav */
+.parish-header__quicknav {
+    padding: 16px 0 20px;
+    border-bottom: 1px solid rgba(0,0,0,0.06);
+}
+
+.parish-header__quicknav-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    justify-content: center;
+}
+
+.parish-quicknav-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 7px;
+    padding: 8px 18px;
+    border-radius: 999px;
+    border: 1.5px solid var(--bethel-primary);
+    background: transparent;
+    color: var(--bethel-primary);
+    font-size: 0.82rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background 0.18s, color 0.18s, transform 0.12s;
+}
+
+.parish-quicknav-btn:hover {
+    background: var(--bethel-primary);
+    color: #fff;
+    transform: translateY(-1px);
+}
+
+/* ── Page content ───────────────────────────────────────────── */
+.parish-page { display: block; }
+
+.parish-page__content {
+    padding-top: 48px;
+    padding-bottom: 64px;
+}
+
+.parish-page__section {
+    margin-bottom: 64px;
+}
+
+/* Livestream section gets less bottom margin — widget is self-contained */
+.parish-page__section--livestream {
+    margin-bottom: 24px;
+}
+
+/* ── Section heading ────────────────────────────────────────── */
+.parish-section-heading {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 28px;
+}
+
+.parish-section-heading__icon {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 42px;
+    height: 42px;
+    border-radius: 11px;
+    background: rgba(26,60,94,0.09);
+    color: var(--bethel-primary);
+    flex-shrink: 0;
+}
+
+.parish-section-heading__text {
+    font-size: 1.4rem;
+    font-weight: 800;
+    color: var(--bethel-primary);
+    margin: 0;
+}
+
+.parish-section-divider {
+    flex: 1;
+    height: 2px;
+    background: linear-gradient(to right, var(--bethel-secondary), transparent);
+    border-radius: 2px;
+}
+
+/* Empty state shared */
+.parish-section-empty {
+    text-align: center;
+    padding: 56px 16px;
+    color: var(--text-muted, #9ca3af);
+}
+
+.parish-section-empty svg {
+    opacity: 0.25;
+    color: var(--bethel-primary);
+    display: block;
+    margin: 0 auto 14px;
+}
+
+.parish-section-empty p {
+    font-size: 0.9rem;
+    margin: 0;
+}
+
+/* ── Announcements grid ─────────────────────────────────────── */
+.parish-announcements { display: block; }
+
+.parish-ann-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+    gap: 20px;
+}
+
+.parish-ann-card {
+    border-radius: var(--bethel-radius, 0.75rem);
+    overflow: hidden;
+    box-shadow: var(--bethel-shadow);
+    background: var(--bg-card, #fff);
+    transition: box-shadow 0.2s, transform 0.15s;
+}
+
+.parish-ann-card:hover {
+    box-shadow: var(--bethel-shadow-md);
+    transform: translateY(-2px);
+}
+
+.parish-ann-card__link {
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+    text-decoration: none;
+    color: inherit;
+}
+
+.parish-ann-card__img {
+    height: 160px;
+    background-size: cover;
+    background-position: center;
+    flex-shrink: 0;
+}
+
+.parish-ann-card__body {
+    padding: 16px;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    flex: 1;
+}
+
+.parish-ann-card__badge {
+    display: inline-block;
+    padding: 2px 10px;
+    border-radius: 999px;
+    font-size: 0.7rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    align-self: flex-start;
+}
+
+.parish-ann-card__title {
+    font-size: 0.95rem;
+    font-weight: 700;
+    margin: 0;
+    color: var(--text-primary, #111);
+    line-height: 1.35;
+}
+
+.parish-ann-card__excerpt {
+    font-size: 0.82rem;
+    color: var(--text-muted, #6b7280);
+    margin: 0;
+    flex: 1;
+    display: -webkit-box;
+    -webkit-line-clamp: 3;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+}
+
+.parish-ann-card__meta {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    font-size: 0.75rem;
+    color: var(--text-muted, #9ca3af);
+    margin-top: auto;
+}
+
+.parish-ann-more {
+    text-align: center;
+    margin-top: 24px;
+}
+
+.parish-load-more-btn {
+    padding: 9px 28px;
+    border-radius: 999px;
+    border: 1.5px solid var(--bethel-primary);
+    background: transparent;
+    color: var(--bethel-primary);
+    font-weight: 600;
+    font-size: 0.85rem;
+    cursor: pointer;
+    transition: background 0.18s, color 0.18s;
+}
+
+.parish-load-more-btn:hover {
+    background: var(--bethel-primary);
+    color: #fff;
+}
+
+/* ── Calendar ───────────────────────────────────────────────── */
+.parish-calendar {
+    background: var(--bg-card, #fff);
+    border-radius: var(--bethel-radius, 0.75rem);
+    box-shadow: var(--bethel-shadow);
+    overflow: hidden;
+}
+
+.parish-cal-toolbar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 10px;
+    padding: 14px 18px;
+    border-bottom: 1px solid rgba(0,0,0,0.07);
+    background: var(--bg-card, #fff);
+}
+
+.parish-cal-toolbar__nav {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.parish-cal-toolbar__label {
+    font-weight: 700;
+    font-size: 0.95rem;
+    min-width: 160px;
+    text-align: center;
+    color: var(--text-primary, #111);
+}
+
+.parish-cal-nav-btn {
+    width: 30px;
+    height: 30px;
+    border-radius: 8px;
+    border: 1px solid rgba(0,0,0,0.12);
+    background: transparent;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--text-primary, #374151);
+    transition: background 0.15s;
+}
+
+.parish-cal-nav-btn:hover { background: rgba(0,0,0,0.06); }
+
+.parish-cal-toolbar__right {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.parish-cal-today-btn {
+    padding: 5px 14px;
+    border-radius: 7px;
+    border: 1px solid rgba(0,0,0,0.15);
+    background: transparent;
+    font-size: 0.8rem;
+    font-weight: 600;
+    cursor: pointer;
+    color: var(--text-primary, #374151);
+    transition: background 0.15s;
+}
+
+.parish-cal-today-btn:hover { background: rgba(0,0,0,0.05); }
+
+.parish-cal-view-toggle {
+    display: flex;
+    border: 1px solid rgba(0,0,0,0.14);
+    border-radius: 8px;
+    overflow: hidden;
+}
+
+.parish-cal-toggle-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    padding: 5px 12px;
+    background: transparent;
+    border: none;
+    font-size: 0.78rem;
+    font-weight: 600;
+    cursor: pointer;
+    color: var(--text-muted, #6b7280);
+    transition: background 0.15s, color 0.15s;
+}
+
+.parish-cal-toggle-btn.active {
+    background: var(--bethel-primary);
+    color: #fff;
+}
+
+/* Month grid */
+.parish-cal-grid {
+    display: grid;
+    grid-template-columns: repeat(7, 1fr);
+    border-left: 1px solid rgba(0,0,0,0.07);
+    border-top: 1px solid rgba(0,0,0,0.07);
+}
+
+.parish-cal-header-cell {
+    padding: 8px 4px;
+    text-align: center;
+    font-size: 0.7rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: var(--text-muted, #9ca3af);
+    border-right: 1px solid rgba(0,0,0,0.07);
+    border-bottom: 1px solid rgba(0,0,0,0.07);
+    background: rgba(0,0,0,0.02);
+}
+
+.parish-cal-cell {
+    min-height: 88px;
+    padding: 6px 6px 4px;
+    border-right: 1px solid rgba(0,0,0,0.07);
+    border-bottom: 1px solid rgba(0,0,0,0.07);
+    background: var(--bg-card, #fff);
+    vertical-align: top;
+}
+
+.parish-cal-cell--today { background: rgba(26,60,94,0.04); }
+.parish-cal-cell--faded  { background: rgba(0,0,0,0.015); }
+
+.parish-cal-cell__num {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 24px;
+    height: 24px;
+    border-radius: 50%;
+    font-size: 0.75rem;
+    font-weight: 600;
+    color: var(--text-primary, #374151);
+    margin-bottom: 3px;
+}
+
+.parish-cal-cell--today .parish-cal-cell__num {
+    background: var(--bethel-primary);
+    color: #fff;
+}
+
+.parish-cal-cell--faded .parish-cal-cell__num { color: var(--text-muted, #c4cdd8); }
+
+.parish-cal-cell__entries {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+}
+
+.parish-cal-entry {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    padding: 2px 4px;
+    border-radius: 4px;
+    font-size: 0.67rem;
+    font-weight: 600;
+    background: rgba(26, 60, 94, 0.1); /* fallback for browsers without color-mix */
+    background: color-mix(in srgb, var(--entry-color, #1a3c5e) 12%, transparent);
+    color: var(--entry-color, #1a3c5e);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    cursor: default;
+    max-width: 100%;
+}
+
+.parish-cal-entry__label {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.parish-cal-entry--more {
+    color: var(--text-muted, #9ca3af);
+    background: transparent;
+    font-style: italic;
+}
+
+/* Legend */
+.parish-cal-legend {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 12px;
+    padding: 12px 18px;
+    border-top: 1px solid rgba(0,0,0,0.07);
+}
+
+.parish-cal-legend-item {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    font-size: 0.72rem;
+    color: var(--text-muted, #6b7280);
+}
+
+/* Week grid */
+.parish-week-grid {
+    display: grid;
+    grid-template-columns: repeat(7, 1fr);
+    min-height: 320px;
+    border-left: 1px solid rgba(0,0,0,0.07);
+    border-top: 1px solid rgba(0,0,0,0.07);
+}
+
+.parish-week-col {
+    border-right: 1px solid rgba(0,0,0,0.07);
+    display: flex;
+    flex-direction: column;
+}
+
+.parish-week-col--today { background: rgba(26,60,94,0.04); }
+
+.parish-week-col__header {
+    padding: 10px 6px 8px;
+    border-bottom: 1px solid rgba(0,0,0,0.07);
+    text-align: center;
+    background: rgba(0,0,0,0.02);
+}
+
+.parish-week-col__dow {
+    display: block;
+    font-size: 0.65rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: var(--text-muted, #9ca3af);
+    margin-bottom: 4px;
+}
+
+.parish-week-col__num {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 28px;
+    height: 28px;
+    border-radius: 50%;
+    font-size: 0.85rem;
+    font-weight: 700;
+    color: var(--text-primary, #374151);
+}
+
+.parish-week-col__num.today {
+    background: var(--bethel-primary);
+    color: #fff;
+}
+
+.parish-week-col__entries {
+    padding: 8px 6px;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    flex: 1;
+}
+
+.parish-week-empty {
+    color: var(--text-muted, #d1d5db);
+    font-size: 0.75rem;
+    text-align: center;
+    margin-top: 12px;
+}
+
+.parish-week-entry {
+    padding: 5px 7px;
+    border-radius: 6px;
+    border-left: 3px solid var(--entry-color, #1a3c5e);
+    background: rgba(0,0,0,0.03);
+    cursor: default;
+}
+
+.parish-week-entry__time {
+    display: block;
+    font-size: 0.62rem;
+    font-weight: 700;
+    color: var(--entry-color, #1a3c5e);
+    letter-spacing: 0.02em;
+}
+
+.parish-week-entry__label {
+    display: block;
+    font-size: 0.72rem;
+    font-weight: 600;
+    color: var(--text-primary, #374151);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    margin-top: 1px;
+}
+
+.parish-week-entry__sub {
+    display: block;
+    font-size: 0.65rem;
+    color: var(--text-muted, #9ca3af);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+/* ── Clergy grid ────────────────────────────────────────────── */
+/* ── Clergy grid ────────────────────────────────────────────── */
+.parish-clergy { display: block; }
+
+.parish-clergy__search-wrap {
+    margin-bottom: 24px;
+}
+
+.parish-clergy__search {
+    position: relative;
+    max-width: 440px;
+}
+
+.parish-clergy__search-icon {
+    position: absolute;
+    left: 14px;
+    top: 50%;
+    transform: translateY(-50%);
+    color: var(--text-muted, #9ca3af);
+    pointer-events: none;
+}
+
+.parish-clergy__search-input {
+    width: 100%;
+    padding: 10px 38px 10px 40px;
+    border-radius: 10px;
+    border: 1.5px solid rgba(0,0,0,0.14);
+    font-size: 0.875rem;
+    background: var(--bg-input, #fff);
+    color: var(--text-primary, #111);
+    transition: border-color 0.18s, box-shadow 0.18s;
+    outline: none;
+}
+
+.parish-clergy__search-input:focus {
+    border-color: var(--bethel-primary);
+    box-shadow: 0 0 0 3px rgba(26,60,94,0.12);
+}
+
+.parish-clergy__search-clear {
+    position: absolute;
+    right: 10px;
+    top: 50%;
+    transform: translateY(-50%);
+    border: none;
+    background: none;
+    font-size: 1.1rem;
+    color: var(--text-muted, #9ca3af);
+    cursor: pointer;
+    line-height: 1;
+    padding: 0 4px;
+}
+
+.parish-clergy__empty {
+    text-align: center;
+    padding: 56px 16px;
+    color: var(--text-muted, #9ca3af);
+}
+
+.parish-clergy__empty svg {
+    opacity: 0.2;
+    color: var(--bethel-primary);
+    display: block;
+    margin: 0 auto 14px;
+}
+
+.parish-clergy__empty p {
+    font-size: 0.9rem;
+    margin: 0;
+}
+
+.parish-clergy__grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+    gap: 20px;
+}
+
+.parish-clergy-card {
+    border-radius: var(--bethel-radius, 0.75rem);
+    overflow: hidden;
+    box-shadow: var(--bethel-shadow);
+    background: var(--bg-card, #fff);
+    transition: box-shadow 0.2s, transform 0.15s;
+}
+
+.parish-clergy-card:hover {
+    box-shadow: var(--bethel-shadow-md);
+    transform: translateY(-3px);
+}
+
+.parish-clergy-card__link {
+    display: flex;
+    flex-direction: column;
+    text-decoration: none;
+    color: inherit;
+    height: 100%;
+}
+
+.parish-clergy-card__img-wrap {
+    height: 200px;
+    overflow: hidden;
+    background: #e5e7eb;
+    flex-shrink: 0;
+}
+
+.parish-clergy-card__img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    object-position: top center;
+    transition: transform 0.3s ease;
+}
+
+.parish-clergy-card:hover .parish-clergy-card__img {
+    transform: scale(1.04);
+}
+
+.parish-clergy-card__body {
+    padding: 16px;
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+.parish-clergy-card__title-badge {
+    font-size: 0.7rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: var(--bethel-secondary);
+    margin: 0;
+}
+
+.parish-clergy-card__name {
+    font-size: 1rem;
+    font-weight: 800;
+    color: var(--bethel-primary);
+    margin: 0;
+    line-height: 1.25;
+}
+
+.parish-clergy-card__spec {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    font-size: 0.75rem;
+    color: var(--text-muted, #6b7280);
+    margin: 0;
+}
+
+.parish-clergy-card__bio {
+    font-size: 0.78rem;
+    color: var(--text-muted, #6b7280);
+    margin: 0;
+    display: -webkit-box;
+    -webkit-line-clamp: 3;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+    line-height: 1.5;
+    flex: 1;
+}
+
+.parish-clergy-card__cta {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 0.78rem;
+    font-weight: 700;
+    color: var(--bethel-primary);
+    margin-top: 8px;
+}
+
+/* ── Dark mode overrides ─────────────────────────────────────── */
+[data-theme="dark"] .parish-header {
+    background: #0f1923;
+    border-color: rgba(255,255,255,0.08);
+}
+
+[data-theme="dark"] .parish-header__desc { color: rgba(209,220,232,0.7); }
+
+[data-theme="dark"] .parish-quicknav-btn {
+    border-color: rgba(255,255,255,0.25);
+    color: #d1dce8;
+}
+
+[data-theme="dark"] .parish-quicknav-btn:hover {
+    background: rgba(255,255,255,0.1);
+    color: #fff;
+}
+
+[data-theme="dark"] .parish-section-heading__text { color: #e2e8f0; }
+[data-theme="dark"] .parish-section-heading__icon {
+    background: rgba(255,255,255,0.08);
+    color: #93c5fd;
+}
+
+[data-theme="dark"] .parish-calendar,
+[data-theme="dark"] .parish-ann-card,
+[data-theme="dark"] .parish-clergy-card {
+    background: #1a2535;
+    box-shadow: 0 4px 20px rgba(0,0,0,0.3);
+}
+
+[data-theme="dark"] .parish-cal-toolbar { background: #1a2535; }
+[data-theme="dark"] .parish-cal-header-cell { background: rgba(255,255,255,0.04); color: rgba(209,220,232,0.55); }
+[data-theme="dark"] .parish-cal-cell { background: #1a2535; border-color: rgba(255,255,255,0.07); }
+[data-theme="dark"] .parish-cal-cell--today { background: rgba(255,255,255,0.04); }
+[data-theme="dark"] .parish-cal-cell--faded { background: rgba(0,0,0,0.15); }
+[data-theme="dark"] .parish-cal-cell__num { color: #d1dce8; }
+[data-theme="dark"] .parish-cal-legend { border-color: rgba(255,255,255,0.08); }
+
+[data-theme="dark"] .parish-week-col { border-color: rgba(255,255,255,0.07); }
+[data-theme="dark"] .parish-week-col__header { background: rgba(255,255,255,0.03); border-color: rgba(255,255,255,0.07); }
+[data-theme="dark"] .parish-week-col__dow { color: rgba(209,220,232,0.45); }
+[data-theme="dark"] .parish-week-col__num { color: #d1dce8; }
+[data-theme="dark"] .parish-week-entry { background: rgba(255,255,255,0.04); }
+[data-theme="dark"] .parish-week-entry__label { color: #d1dce8; }
+
+[data-theme="dark"] .parish-ann-card__title { color: #e2e8f0; }
+[data-theme="dark"] .parish-clergy-card__name { color: #93c5fd; }
+[data-theme="dark"] .parish-clergy-card__img-wrap { background: #1e2e42; }
+
+[data-theme="dark"] .parish-clergy__search-input {
+    background: #1e2e42;
+    border-color: rgba(255,255,255,0.15);
+    color: #d1dce8;
+}
+
+[data-theme="dark"] .parish-clergy__search-input:focus {
+    border-color: var(--bethel-secondary);
+}
+
+[data-theme="dark"] .parish-cal-toolbar__label,
+[data-theme="dark"] .parish-cal-nav-btn,
+[data-theme="dark"] .parish-cal-today-btn { color: #d1dce8; }
+
+[data-theme="dark"] .parish-cal-nav-btn,
+[data-theme="dark"] .parish-cal-today-btn { border-color: rgba(255,255,255,0.15); }
+
+[data-theme="dark"] .parish-cal-nav-btn:hover,
+[data-theme="dark"] .parish-cal-today-btn:hover { background: rgba(255,255,255,0.08); }
+
+[data-theme="dark"] .parish-cal-view-toggle { border-color: rgba(255,255,255,0.15); }
+[data-theme="dark"] .parish-cal-toggle-btn { color: rgba(209,220,232,0.55); }
+[data-theme="dark"] .parish-cal-grid { border-color: rgba(255,255,255,0.07); }
+[data-theme="dark"] .parish-week-grid { border-color: rgba(255,255,255,0.07); }
+
+/* ═══════════════════════════════════════════════════════════════
+   CLERGY PROFILE PAGE
+   ═══════════════════════════════════════════════════════════════ */
+
+.clergy-profile-page {
+    min-height: 60vh;
+}
+
+/* ── Breadcrumb ─────────────────────────────────────────────── */
+/* nav element itself — no visual styles needed, just resets */
+.clergy-profile__breadcrumb { display: block; }
+
+.clergy-profile__breadcrumb-wrap {
+    background: var(--bethel-primary);
+    padding: 10px 0;
+}
+
+.clergy-profile__breadcrumb-list {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 4px;
+}
+
+.clergy-profile__breadcrumb-link {
+    color: rgba(255,255,255,0.72);
+    text-decoration: none;
+    font-size: 0.8rem;
+    transition: color 0.15s;
+}
+
+.clergy-profile__breadcrumb-link:hover { color: #fff; }
+
+.clergy-profile__breadcrumb-sep {
+    color: rgba(255,255,255,0.35);
+    font-size: 0.8rem;
+    user-select: none;
+}
+
+.clergy-profile__breadcrumb-current {
+    color: var(--bethel-secondary);
+    font-size: 0.8rem;
+    font-weight: 600;
+}
+
+/* ── Hero ───────────────────────────────────────────────────── */
+.clergy-profile__hero {
+    background: var(--bg-card, #fff);
+    padding-bottom: 40px;
+    border-bottom: 1px solid rgba(0,0,0,0.07);
+}
+
+.clergy-profile__back-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    color: var(--bethel-primary);
+    font-size: 0.82rem;
+    font-weight: 600;
+    text-decoration: none;
+    padding: 18px 0 12px;
+    transition: gap 0.15s, opacity 0.15s;
+    opacity: 0.8;
+}
+
+.clergy-profile__back-btn:hover {
+    opacity: 1;
+    gap: 9px;
+    color: var(--bethel-primary);
+}
+
+/* Profile card — two column layout */
+.clergy-profile__card {
+    display: grid;
+    grid-template-columns: 280px 1fr;
+    gap: 40px;
+    align-items: start;
+    padding: 32px 0 8px;
+}
+
+@media (max-width: 768px) {
+    .clergy-profile__card {
+        grid-template-columns: 1fr;
+        gap: 24px;
+    }
+}
+
+/* Image column */
+.clergy-profile__img-col {
+    display: flex;
+    justify-content: center;
+}
+
+.clergy-profile__img-frame {
+    width: 240px;
+    height: 288px;
+    border-radius: 18px;
+    overflow: hidden;
+    box-shadow: 0 12px 40px rgba(26,60,94,0.18);
+    background: #e5e7eb;
+    flex-shrink: 0;
+    position: relative;
+}
+
+.clergy-profile__img-frame::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    border-radius: inherit;
+    box-shadow: inset 0 0 0 1.5px rgba(255,255,255,0.15);
+    pointer-events: none;
+}
+
+.clergy-profile__img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    object-position: top center;
+}
+
+/* Info column */
+.clergy-profile__info-col {
+    padding-top: 8px;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.clergy-profile__title-badge {
+    display: inline-block;
+    padding: 3px 12px;
+    border-radius: 999px;
+    background: rgba(200,151,58,0.12);
+    color: var(--bethel-secondary);
+    font-size: 0.72rem;
+    font-weight: 800;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    align-self: flex-start;
+}
+
+.clergy-profile__name {
+    font-size: clamp(1.6rem, 3.5vw, 2.2rem);
+    font-weight: 800;
+    color: var(--bethel-primary);
+    margin: 0;
+    line-height: 1.2;
+}
+
+.clergy-profile__meta-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 16px;
+    align-items: center;
+}
+
+.clergy-profile__meta-item {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 0.82rem;
+    color: var(--text-muted, #6b7280);
+}
+
+.clergy-profile__spec {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 0.82rem;
+    color: var(--bethel-secondary);
+    font-weight: 600;
+}
+
+.clergy-profile__divider {
+    border: none;
+    border-top: 1px solid rgba(0,0,0,0.08);
+    margin: 4px 0;
+}
+
+.clergy-profile__bio {
+    font-size: 0.93rem;
+    line-height: 1.75;
+    color: var(--text-primary, #374151);
+    margin: 0;
+    max-width: 640px;
+}
+
+.clergy-profile__bio--empty {
+    color: var(--text-muted, #9ca3af);
+    font-style: italic;
+}
+
+/* ── Content area below hero ────────────────────────────────── */
+.clergy-profile__content {
+    padding-top: 48px;
+    padding-bottom: 64px;
+}
+
+/* ── Dark mode ──────────────────────────────────────────────── */
+[data-theme="dark"] .clergy-profile__hero {
+    background: #0f1923;
+    border-color: rgba(255,255,255,0.08);
+}
+
+[data-theme="dark"] .clergy-profile__name { color: #e2e8f0; }
+[data-theme="dark"] .clergy-profile__bio  { color: rgba(209,220,232,0.8); }
+
+[data-theme="dark"] .clergy-profile__divider {
+    border-color: rgba(255,255,255,0.1);
+}
+
+[data-theme="dark"] .clergy-profile__img-frame {
+    background: #1e2e42;
+    box-shadow: 0 12px 40px rgba(0,0,0,0.4);
+}
+
+[data-theme="dark"] .clergy-profile__back-btn {
+    color: #93c5fd;
+}
+
+[data-theme="dark"] .clergy-profile__back-btn:hover {
+    color: #bfdbfe;
+}

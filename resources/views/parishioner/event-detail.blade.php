@@ -3,7 +3,7 @@
 @section('title', $pageData['event']['title'] ?? 'Event Detail')
 @section('meta_description', $pageData['event']['description'] ?? 'View event details.')
 
-@push('head')
+@push('preload')
 <script>
     window.__PAGE_DATA__ = {!! json_encode($pageData) !!};
 </script>

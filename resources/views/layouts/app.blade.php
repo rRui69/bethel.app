@@ -17,6 +17,7 @@
           rel="stylesheet">
 
     @viteReactRefresh
+    @stack('preload')
     @vite(['resources/js/app.jsx'])
     @stack('head')
 </head>
