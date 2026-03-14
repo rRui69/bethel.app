@@ -31,8 +31,8 @@ Route::get('/parish/{parish}',       [PublicParishController::class, 'show'])->n
 Route::get('/api/public/parish/{parish}', [PublicParishController::class, 'data'])->name('api.parish.data');
 
 // ── Public clergy profile pages ───────────────────────────────────────────────
-Route::get('/parish/{parish}/clergy/{user}',       [PublicClergyController::class, 'show'])->name('clergy.show');
-Route::get('/api/public/parish/{parish}/clergy/{user}', [PublicClergyController::class, 'data'])->name('api.clergy.data');
+Route::get('/parish/{parish}/clergy/{user}',       [PublicClergyController::class, 'show'])->name('parish.clergy.show');
+Route::get('/api/public/parish/{parish}/clergy/{user}', [PublicClergyController::class, 'data'])->name('api.parish.clergy.data');
 
 // Public APIs — no auth required
 Route::get('/api/sacrament-types', [SacramentTypeController::class, 'publicIndex'])->name('api.sacrament-types.public');
@@ -115,7 +115,6 @@ Route::prefix('admin')
     ->name('admin.')
     ->group(function () {
         Route::get('',                      [DashboardController::class,           'index'])->name('dashboard');
-        Route::get('/dashboard',            [DashboardController::class,           'index'])->name('dashboard');
         Route::get('/users',                [UserManagementController::class,       'page'])->name('users');
         Route::get('/announcements',        [AnnouncementController::class,         'page'])->name('announcements');
         Route::get('/announcements/create', [AnnouncementController::class,    'page'])->name('announcements.create');
