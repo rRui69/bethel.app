@@ -27,7 +27,6 @@
 </head>
 <body>
     <div class="wrap">
-
         {{-- Header --}}
         <div class="header">
             <div class="logo">Bethel<span>App</span></div>
