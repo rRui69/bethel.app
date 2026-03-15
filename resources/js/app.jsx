@@ -8,6 +8,7 @@ import { createRoot } from 'react-dom/client';
 import Home                     from './pages/Home/home';
 import Login                    from './pages/Auth/Login';
 import Register                 from './pages/Auth/Register';
+import OtpVerification          from './pages/Auth/OtpVerification';
 import SacramentsDropdown       from './components/SacramentsDropdown';
 import NavBrand                 from './components/NavBrand';
 import ThemeToggle              from './components/ThemeToggle';
@@ -30,6 +31,7 @@ const PAGE_REGISTRY = [
     { id: 'bethel-home',                Component: Home                     },
     { id: 'bethel-login',               Component: Login                    },
     { id: 'bethel-register',            Component: Register                 },
+    { id: 'bethel-otp-verification',    Component: OtpVerification          },
     { id: 'bethel-sacraments-nav',      Component: SacramentsDropdown       },
     { id: 'bethel-nav-brand',           Component: NavBrand                 },
     { id: 'bethel-nav-brand-mobile',    Component: NavBrand                 },

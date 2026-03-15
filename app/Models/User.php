@@ -20,6 +20,7 @@ class User extends Authenticatable
         'first_name', 'middle_name', 'last_name', 'birth_date', 'gender',
         'phone', 'country', 'province', 'city', 'barangay',
         'street_address', 'zip_code',
+        'otp_code', 'otp_expires_at', 'email_verified_at',
     ];
 
     protected $hidden = ['password', 'remember_token'];
@@ -28,6 +29,7 @@ class User extends Authenticatable
     {
         return [
             'email_verified_at' => 'datetime',
+            'otp_expires_at'    => 'datetime',
             'birth_date'        => 'date',
             'password'          => 'hashed',
         ];

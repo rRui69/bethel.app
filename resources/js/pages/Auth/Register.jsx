@@ -152,8 +152,8 @@ export default function Register() {
         setGeneralError('');
 
         try {
-            await window.axios.post('/register', formData);
-            window.location.href = '/';
+            const res = await window.axios.post('/register', formData);
+            window.location.href = res.data?.redirect_url ?? '/verify-otp';
         } catch (err) {
             if (err.response?.status === 422) {
                 const serverErrors = err.response.data.errors ?? {};

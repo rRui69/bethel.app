@@ -71,7 +71,7 @@ Route::prefix('api/livestreams')->name('api.livestreams.')->group(function () {
 require __DIR__.'/auth.php';
 
 // Authenticated parishioner routes
-Route::middleware('auth')->group(function () {
+Route::middleware(['auth', 'verified'])->group(function () {
     Route::post('/sacraments/submit', [SacramentController::class, 'submit'])->name('sacraments.submit');
 
     // Inbox — dedicated notification + message
@@ -111,7 +111,7 @@ Route::middleware('auth')->group(function () {
 
 // Admin routes
 Route::prefix('admin')
-    ->middleware(['auth', 'admin'])
+    ->middleware(['auth', 'verified', 'admin'])
     ->name('admin.')
     ->group(function () {
         Route::get('',                      [DashboardController::class,           'index'])->name('dashboard');
