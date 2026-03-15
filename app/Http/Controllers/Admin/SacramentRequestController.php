@@ -3,6 +3,8 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Admin\AdminBaseController;
+use App\Mail\SacramentApprovedMail;
+use App\Mail\SacramentCancelledMail;
 use App\Models\Event;
 use App\Models\Notification;
 use App\Models\RequestMessage;
@@ -12,6 +14,7 @@ use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Storage;
 
 class SacramentRequestController extends AdminBaseController
@@ -160,12 +163,21 @@ class SacramentRequestController extends AdminBaseController
             'admin_notes' => $validated['admin_notes'] ?? $sacramentRequest->admin_notes,
         ]);
 
-        // Notify parishioner if status changed
         if ($oldStatus !== $validated['status']) {
             $this->notifyParishioner($sacramentRequest, $validated['status']);
+
+            // Send approval email
+            if ($validated['status'] === 'approved') {
+                try {
+                    $sacramentRequest->load(['user', 'parish', 'assignedClergy']);
+                    Mail::to($sacramentRequest->user->email)
+                        ->send(new SacramentApprovedMail($sacramentRequest));
+                } catch (\Throwable $e) {
+                    Log::warning('SacramentApprovedMail failed', ['error' => $e->getMessage()]);
+                }
+            }
         }
 
-        // Auto-create an Event record when a sacramental request is approved
         if ($oldStatus !== 'approved' && $validated['status'] === 'approved') {
             $this->createEventFromSacramentRequest($sacramentRequest);
         }
@@ -174,6 +186,113 @@ class SacramentRequestController extends AdminBaseController
             'id'          => $sacramentRequest->id,
             'status'      => $sacramentRequest->status,
             'admin_notes' => $sacramentRequest->admin_notes,
+        ]);
+    }
+
+    // ── Admin-initiated cancellation ───────────────────────────
+    // Admin cancels directly — sends inbox message + email to parishioner.
+    public function adminCancel(Request $request, SacramentRequest $sacramentRequest)
+    {
+        // Only cancellable when pending or approved
+        if (!in_array($sacramentRequest->status, ['pending', 'approved'])) {
+            return response()->json(['message' => 'This request cannot be cancelled in its current status.'], 422);
+        }
+
+        $validated = $request->validate([
+            'reason' => 'required|string|min:10|max:1000',
+        ]);
+
+        $sacramentRequest->update([
+            'status'              => 'cancelled',
+            'cancellation_reason' => $validated['reason'],
+        ]);
+
+        // 1. Inbox message to parishioner
+        try {
+            $adminName = Auth::user()->full_name;
+            RequestMessage::create([
+                'sacrament_request_id' => $sacramentRequest->id,
+                'sender_id'            => Auth::id(),
+                'body'                 => "Your {$sacramentRequest->sacrament_type} request has been cancelled by the parish.\n\nReason: {$validated['reason']}",
+                'read_by_admin'        => true,
+                'read_by_parishioner'  => false,
+            ]);
+        } catch (\Throwable $e) {
+            Log::warning('adminCancel: inbox message failed', ['error' => $e->getMessage()]);
+        }
+
+        // 2. Inbox notification
+        try {
+            Notification::insert([[
+                'user_id'         => $sacramentRequest->user_id,
+                'message'         => "Your {$sacramentRequest->sacrament_type} request has been cancelled by the parish. Reason: {$validated['reason']}",
+                'type'            => 'request_update',
+                'is_read'         => false,
+                'notifiable_type' => SacramentRequest::class,
+                'notifiable_id'   => $sacramentRequest->id,
+                'created_at'      => now(),
+                'updated_at'      => now(),
+            ]]);
+        } catch (\Throwable $e) {
+            Log::warning('adminCancel: notification failed', ['error' => $e->getMessage()]);
+        }
+
+        // 3. Email
+        try {
+            $sacramentRequest->load(['user', 'parish']);
+            Mail::to($sacramentRequest->user->email)
+                ->send(new SacramentCancelledMail($sacramentRequest, $validated['reason']));
+        } catch (\Throwable $e) {
+            Log::warning('adminCancel: email failed', ['error' => $e->getMessage()]);
+        }
+
+        return response()->json([
+            'id'     => $sacramentRequest->id,
+            'status' => $sacramentRequest->status,
+        ]);
+    }
+
+    // ── Review parishioner cancellation request ────────────────
+    // Admin approves → status = 'cancelled'
+    // Admin rejects  → status = 'cancellation_rejected'
+    public function reviewCancellation(Request $request, SacramentRequest $sacramentRequest)
+    {
+        if ($sacramentRequest->status !== 'cancellation_requested') {
+            return response()->json(['message' => 'No pending cancellation request to review.'], 422);
+        }
+
+        $validated = $request->validate([
+            'action' => 'required|in:approve,reject',
+            'reason' => 'nullable|string|max:500',
+        ]);
+
+        $newStatus = $validated['action'] === 'approve' ? 'cancelled' : 'cancellation_rejected';
+
+        $sacramentRequest->update(['status' => $newStatus]);
+
+        // Notify parishioner of outcome
+        try {
+            $msg = $validated['action'] === 'approve'
+                ? "Your cancellation request for your {$sacramentRequest->sacrament_type} booking has been approved. The booking is now cancelled."
+                : "Your cancellation request for your {$sacramentRequest->sacrament_type} booking was reviewed and not approved." . ($validated['reason'] ? " Reason: {$validated['reason']}" : '');
+
+            Notification::insert([[
+                'user_id'         => $sacramentRequest->user_id,
+                'message'         => $msg,
+                'type'            => 'request_update',
+                'is_read'         => false,
+                'notifiable_type' => SacramentRequest::class,
+                'notifiable_id'   => $sacramentRequest->id,
+                'created_at'      => now(),
+                'updated_at'      => now(),
+            ]]);
+        } catch (\Throwable $e) {
+            Log::warning('reviewCancellation: notification failed', ['error' => $e->getMessage()]);
+        }
+
+        return response()->json([
+            'id'     => $sacramentRequest->id,
+            'status' => $sacramentRequest->status,
         ]);
     }
 

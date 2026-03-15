@@ -314,6 +314,7 @@ function BuilderModal({ initial, onSave, onClose, saving }) {
         name: '', description: '', icon: 'hands',
         icon_color: '#1a3c5e', icon_bg: '#dbeafe',
         is_active: true, sort_order: 0,
+        min_price: 0,
         fields: [],
         ...(initial ?? {}),
     });
@@ -368,6 +369,7 @@ function BuilderModal({ initial, onSave, onClose, saving }) {
             icon_bg:     form.icon_bg,
             is_active:   form.is_active,
             sort_order:  form.sort_order ?? 0,
+            min_price:   Number(form.min_price) >= 0 ? Number(form.min_price) : 0,
             form_schema: {
                 fields: form.fields.map(({ _isNew, ...rest }) => ({
                     ...rest,
@@ -495,6 +497,37 @@ function BuilderModal({ initial, onSave, onClose, saving }) {
                                             {form.is_active ? 'Active — visible to parishioners' : 'Inactive — hidden from public'}
                                         </span>
                                     </label>
+                                </div>
+                            </div>
+
+                            {/* Minimum Price */}
+                            <div className="um-field">
+                                <label className="um-label">
+                                    Minimum Base Price
+                                    <span style={{ fontSize: '0.7rem', fontWeight: 400,
+                                                   color: 'var(--text-muted)', marginLeft: 6 }}>
+                                        (shown to parishioner as the base fee for this sacrament)
+                                    </span>
+                                </label>
+                                <div style={{ position: 'relative' }}>
+                                    <span style={{
+                                        position: 'absolute', left: 12, top: '50%',
+                                        transform: 'translateY(-50%)',
+                                        fontSize: '0.9rem', fontWeight: 600,
+                                        color: 'var(--text-muted)',
+                                    }}>₱</span>
+                                    <input
+                                        type="number"
+                                        className="um-input"
+                                        min={0}
+                                        step={1}
+                                        value={form.min_price ?? 0}
+                                        onChange={e => set('min_price', Math.max(0, Number(e.target.value) || 0))}
+                                        style={{ paddingLeft: 28 }}
+                                    />
+                                </div>
+                                <div style={{ fontSize: '0.72rem', color: 'var(--text-muted)', marginTop: 4 }}>
+                                    Set to 0 if there is no minimum fee
                                 </div>
                             </div>
 

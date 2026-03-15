@@ -19,7 +19,7 @@ class SacramentController extends Controller
     public function listing()
     {
         $types = SacramentType::active()
-            ->select('id', 'name', 'slug', 'description', 'icon', 'icon_color', 'icon_bg')
+            ->select('id', 'name', 'slug', 'description', 'icon', 'icon_color', 'icon_bg', 'min_price', 'form_schema')
             ->get()
             ->map(fn ($t) => [
                 'id'          => $t->id,
@@ -29,6 +29,12 @@ class SacramentController extends Controller
                 'icon'        => $t->icon,
                 'icon_color'  => $t->icon_color,
                 'icon_bg'     => $t->icon_bg,
+                'min_price'   => $t->min_price ?? 0,
+                'doc_fields'  => collect($t->form_schema['fields'] ?? [])
+                                    ->filter(fn ($f) => ($f['type'] ?? '') === 'file')
+                                    ->map(fn ($f) => $f['label'])
+                                    ->values()
+                                    ->toArray(),
                 'href'        => "/sacraments/{$t->slug}",
             ])
             ->toArray();
@@ -82,7 +88,7 @@ class SacramentController extends Controller
         return view('parishioner.sacrament-form', compact('pageData'));
     }
 
-    // ── Authenticated: submit request ─────────────────────────────
+    //  Authenticated: submit request
     public function submit(Request $request): JsonResponse
     {
         $validated = $request->validate([
@@ -99,7 +105,7 @@ class SacramentController extends Controller
         $type    = SacramentType::findOrFail($validated['sacrament_type_id']);
         $details = $validated['details'] ?? [];
 
-        // ── Save the request ──────────────────────────────────────
+        //  Save the request
         $sacramentRequest = SacramentRequest::create([
             'user_id'           => Auth::id(),
             'parish_id'         => $validated['parish_id'],

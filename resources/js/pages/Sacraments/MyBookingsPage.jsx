@@ -9,9 +9,12 @@ import {
 
 // ── Helpers ────────────────────────────────────────────────────
 const STATUS_CFG = {
-    pending:  { label: 'Pending',  bg: '#fef9c3', color: '#92400e', Icon: FaHourglassHalf },
-    approved: { label: 'Approved', bg: '#d1fae5', color: '#065f46', Icon: FaCircleCheck   },
-    rejected: { label: 'Rejected', bg: '#fee2e2', color: '#991b1b', Icon: FaCircleXmark   },
+    pending:                { label: 'Pending',                    bg: '#fef9c3', color: '#92400e', Icon: FaHourglassHalf },
+    approved:               { label: 'Approved',                   bg: '#d1fae5', color: '#065f46', Icon: FaCircleCheck   },
+    rejected:               { label: 'Rejected',                   bg: '#fee2e2', color: '#991b1b', Icon: FaCircleXmark   },
+    cancelled:              { label: 'Cancelled',                  bg: '#f3f4f6', color: '#6b7280', Icon: FaCircleXmark   },
+    cancellation_requested: { label: 'Cancellation Requested',     bg: '#fef3c7', color: '#92400e', Icon: FaHourglassHalf },
+    cancellation_rejected:  { label: 'Cancellation Not Approved',  bg: '#fee2e2', color: '#991b1b', Icon: FaCircleXmark   },
 };
 const CLERGY_CFG = {
     unassigned: { label: 'Not yet assigned', color: '#9ca3af' },
@@ -447,7 +450,13 @@ function BookingCard({ booking, onRefresh }) {
     const [detail,        setDetail]        = useState(null);
     const [loadingDetail, setLoadingDetail] = useState(false);
     const [showPayment,   setShowPayment]   = useState(false);
+    const [showCancel,    setShowCancel]    = useState(false);
+    const [cancelReason,  setCancelReason]  = useState('');
+    const [cancelling,    setCancelling]    = useState(false);
+    const [cancelError,   setCancelError]   = useState('');
     const isTargeted = window.location.hash === `#request-${booking.id}`;
+
+    const canCancel = ['pending', 'approved'].includes(booking.status);
 
     useEffect(() => {
         if (isTargeted) { setExpanded(true); window.scrollTo({ top: 0, behavior: 'smooth' }); }
@@ -476,6 +485,32 @@ function BookingCard({ booking, onRefresh }) {
     const canPay       = ['pending','approved'].includes(booking.status)
                          && ['unpaid','rejected'].includes(booking.payment_status);
     const canMessage   = true;
+
+    const handleCancelSubmit = async () => {
+        if (cancelReason.trim().length < 10) return;
+        setCancelling(true);
+        setCancelError('');
+        try {
+            const res = await fetch(`/api/bookings/${booking.id}/request-cancellation`, {
+                method:  'POST',
+                headers: {
+                    'Content-Type':     'application/json',
+                    'X-XSRF-TOKEN':     decodeURIComponent(document.cookie.match(/XSRF-TOKEN=([^;]+)/)?.[1] ?? ''),
+                    'Accept':           'application/json',
+                },
+                body: JSON.stringify({ reason: cancelReason }),
+            });
+            const data = await res.json();
+            if (!res.ok) { setCancelError(data.message ?? 'Request failed.'); return; }
+            setShowCancel(false);
+            setCancelReason('');
+            onRefresh();
+        } catch {
+            setCancelError('Something went wrong. Please try again.');
+        } finally {
+            setCancelling(false);
+        }
+    };
 
     return (
         <>
@@ -687,6 +722,17 @@ function BookingCard({ booking, onRefresh }) {
                                             {booking.payment_status === 'rejected' ? 'Re-submit Payment' : 'Submit Payment'}
                                         </button>
                                     )}
+                                    {canCancel && (
+                                        <button onClick={() => setShowCancel(true)} style={{
+                                            display: 'flex', alignItems: 'center', gap: 6,
+                                            padding: '0.45rem 1rem', borderRadius: 8, cursor: 'pointer',
+                                            border: '1px solid #ef4444', background: 'rgba(239,68,68,0.06)',
+                                            color: '#ef4444', fontSize: '0.82rem', fontWeight: 600,
+                                        }}>
+                                            <FaCircleXmark size={11} />
+                                            Request Cancellation
+                                        </button>
+                                    )}
                                 </div>
                             </>
                         )}
@@ -701,6 +747,86 @@ function BookingCard({ booking, onRefresh }) {
                     onClose={() => setShowPayment(false)}
                     onSuccess={() => { setShowPayment(false); onRefresh(); }}
                 />
+            )}
+
+            {/* Cancel Request Modal */}
+            {showCancel && (
+                <div onClick={() => setShowCancel(false)} style={{
+                    position: 'fixed', inset: 0, zIndex: 1060,
+                    background: 'rgba(0,0,0,0.5)',
+                    display: 'flex', alignItems: 'center', justifyContent: 'center',
+                    padding: '1rem',
+                }}>
+                    <div onClick={e => e.stopPropagation()} style={{
+                        background: 'var(--bg-card,#fff)',
+                        borderRadius: 16, padding: '2rem',
+                        maxWidth: 440, width: '100%',
+                        boxShadow: '0 20px 60px rgba(0,0,0,0.2)',
+                    }}>
+                        <h4 style={{ fontWeight: 800, color: '#1a3c5e', marginBottom: 6, fontSize: '1rem' }}>
+                            Request Cancellation
+                        </h4>
+                        <p style={{ fontSize: '0.82rem', color: '#6b7280', marginBottom: 16, lineHeight: 1.6 }}>
+                            Your cancellation request will be sent to the parish for review.
+                            Please explain your reason below.
+                        </p>
+
+                        <label style={{ fontSize: '0.82rem', fontWeight: 600, color: '#374151',
+                                        display: 'block', marginBottom: 6 }}>
+                            Reason <span style={{ color: '#ef4444' }}>*</span>
+                        </label>
+                        <textarea
+                            rows={4}
+                            value={cancelReason}
+                            onChange={e => { setCancelReason(e.target.value); setCancelError(''); }}
+                            placeholder="Explain why you want to cancel this booking…"
+                            style={{
+                                width: '100%', borderRadius: 10, padding: '10px 14px',
+                                border: '1.5px solid #d1d5db', fontSize: '0.85rem',
+                                resize: 'vertical', outline: 'none', boxSizing: 'border-box',
+                                background: 'var(--bg-input,#fff)', color: 'var(--text-primary,#111)',
+                            }}
+                        />
+                        {cancelReason.trim().length > 0 && cancelReason.trim().length < 10 && (
+                            <p style={{ fontSize: '0.75rem', color: '#ef4444', marginTop: 4 }}>
+                                Please provide more detail (at least 10 characters).
+                            </p>
+                        )}
+                        {cancelError && (
+                            <p style={{ fontSize: '0.78rem', color: '#ef4444', marginTop: 6 }}>{cancelError}</p>
+                        )}
+
+                        <div style={{ display: 'flex', gap: 10, marginTop: 20, justifyContent: 'flex-end' }}>
+                            <button
+                                onClick={() => { setShowCancel(false); setCancelReason(''); setCancelError(''); }}
+                                disabled={cancelling}
+                                style={{
+                                    padding: '9px 20px', borderRadius: 9, cursor: 'pointer',
+                                    border: '1.5px solid #d1d5db', background: 'transparent',
+                                    fontWeight: 600, fontSize: '0.85rem', color: '#374151',
+                                }}
+                            >
+                                Go Back
+                            </button>
+                            <button
+                                onClick={handleCancelSubmit}
+                                disabled={cancelling || cancelReason.trim().length < 10}
+                                style={{
+                                    padding: '9px 20px', borderRadius: 9, cursor: 'pointer',
+                                    border: 'none', background: '#ef4444', color: '#fff',
+                                    fontWeight: 700, fontSize: '0.85rem',
+                                    opacity: (cancelling || cancelReason.trim().length < 10) ? 0.6 : 1,
+                                    display: 'flex', alignItems: 'center', gap: 6,
+                                }}
+                            >
+                                {cancelling
+                                    ? <><FaSpinner size={12} style={{ animation: 'spin 1s linear infinite' }} /> Submitting…</>
+                                    : <><FaCircleXmark size={12} /> Submit Request</>
+                                }
+                            </button>
+                        </div>
+                    </div>
+                </div>
             )}
         </>
     );

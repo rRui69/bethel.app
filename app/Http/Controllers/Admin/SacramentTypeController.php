@@ -10,7 +10,7 @@ use Illuminate\Support\Str;
 
 class SacramentTypeController extends AdminBaseController
 {
-    // ── Page shell ────────────────────────────────────────────────
+    //  Page shell
 
     public function page()
     {
@@ -18,7 +18,7 @@ class SacramentTypeController extends AdminBaseController
         return view('admin.sacrament-types', compact('adminData'));
     }
 
-    // ── Admin API: list all ───────────────────────────────────────
+    //  Admin API: list all
 
     public function index(): JsonResponse
     {
@@ -33,6 +33,7 @@ class SacramentTypeController extends AdminBaseController
                 'icon_bg'     => $t->icon_bg,
                 'is_active'   => $t->is_active,
                 'sort_order'  => $t->sort_order,
+                'min_price'   => $t->min_price,
                 'form_schema' => $t->form_schema ?? ['fields' => []],
                 'field_count' => count($t->form_schema['fields'] ?? []),
                 'created_at'  => $t->created_at->format('M d, Y'),
@@ -41,7 +42,7 @@ class SacramentTypeController extends AdminBaseController
         return response()->json(['data' => $types]);
     }
 
-    // ── Admin API: single ─────────────────────────────────────────
+    // Admin API: single
 
     public function show(SacramentType $sacramentType): JsonResponse
     {
@@ -55,11 +56,12 @@ class SacramentTypeController extends AdminBaseController
             'icon_bg'     => $sacramentType->icon_bg,
             'is_active'   => $sacramentType->is_active,
             'sort_order'  => $sacramentType->sort_order,
+            'min_price'   => $sacramentType->min_price,
             'form_schema' => $sacramentType->form_schema ?? ['fields' => []],
         ]);
     }
 
-    // ── Admin API: create ─────────────────────────────────────────
+    // Admin API: create
 
     public function store(Request $request): JsonResponse
     {
@@ -71,6 +73,7 @@ class SacramentTypeController extends AdminBaseController
             'icon_bg'                  => 'required|string|max:20',
             'is_active'                => 'boolean',
             'sort_order'               => 'integer|min:0',
+            'min_price'                => 'integer|min:0',
             'form_schema'              => 'nullable|array',
             'form_schema.fields'       => 'nullable|array',
             'form_schema.fields.*.id'       => 'required|string',
@@ -92,7 +95,7 @@ class SacramentTypeController extends AdminBaseController
         ], 201);
     }
 
-    // ── Admin API: update ─────────────────────────────────────────
+    // Admin update
 
     public function update(Request $request, SacramentType $sacramentType): JsonResponse
     {
@@ -104,6 +107,7 @@ class SacramentTypeController extends AdminBaseController
             'icon_bg'                  => 'sometimes|required|string|max:20',
             'is_active'                => 'boolean',
             'sort_order'               => 'integer|min:0',
+            'min_price'                => 'integer|min:0',
             'form_schema'              => 'nullable|array',
             'form_schema.fields'       => 'nullable|array',
             'form_schema.fields.*.id'       => 'required|string',
@@ -126,7 +130,6 @@ class SacramentTypeController extends AdminBaseController
         ]);
     }
 
-    // ── Admin API: toggle active ──────────────────────────────────
 
     public function toggle(SacramentType $sacramentType): JsonResponse
     {
@@ -138,7 +141,6 @@ class SacramentTypeController extends AdminBaseController
         ]);
     }
 
-    // ── Admin API: destroy ────────────────────────────────────────
 
     public function destroy(SacramentType $sacramentType): JsonResponse
     {
@@ -148,7 +150,6 @@ class SacramentTypeController extends AdminBaseController
         return response()->json(['message' => 'Sacrament type deleted.']);
     }
 
-    // ── Admin API: reorder ────────────────────────────────────────
 
     public function reorder(Request $request): JsonResponse
     {
@@ -164,7 +165,6 @@ class SacramentTypeController extends AdminBaseController
         return response()->json(['message' => 'Order saved.']);
     }
 
-    // ── Public API: active list (no auth) ─────────────────────────
 
     public function publicIndex(): JsonResponse
     {

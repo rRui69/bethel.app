@@ -6,6 +6,7 @@ use App\Models\Notification;
 use App\Models\RequestMessage;
 use App\Models\RequestPayment;
 use App\Models\SacramentRequest;
+use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\Auth;
@@ -127,7 +128,7 @@ class BookingController extends Controller
         ]);
     }
 
-    //upload payment proof 
+    //upload payment proof
     public function submitPayment(Request $request, SacramentRequest $sacramentRequest): JsonResponse
     {
         if ($sacramentRequest->user_id !== Auth::id()) {
@@ -194,7 +195,7 @@ class BookingController extends Controller
         ], 201);
     }
 
-    // ── API: clergy confirms/declines 
+    // ── API: clergy confirms/declines
     public function respondClergy(Request $request, SacramentRequest $sacramentRequest): JsonResponse
     {
         $user = Auth::user();
@@ -343,6 +344,69 @@ class BookingController extends Controller
             ->count();
 
         return response()->json(['notifications' => $notes, 'unread' => $unread]);
+    }
+
+    // ── Parishioner requests cancellation ─────────────────────
+    public function requestCancellation(Request $request, SacramentRequest $sacramentRequest): JsonResponse
+    {
+        if ($sacramentRequest->user_id !== Auth::id()) {
+            return response()->json(['message' => 'Forbidden.'], 403);
+        }
+
+        if (!in_array($sacramentRequest->status, ['pending', 'approved'])) {
+            return response()->json(['message' => 'This booking cannot be cancelled in its current status.'], 422);
+        }
+
+        $validated = $request->validate([
+            'reason' => 'required|string|min:10|max:1000',
+        ]);
+
+        $sacramentRequest->update([
+            'status'              => 'cancellation_requested',
+            'cancellation_reason' => $validated['reason'],
+        ]);
+
+        // Send message to the request inbox explaining the cancellation
+        RequestMessage::create([
+            'sacrament_request_id' => $sacramentRequest->id,
+            'sender_id'            => Auth::id(),
+            'body'                 => "I would like to request cancellation of this booking.\n\nReason: {$validated['reason']}",
+            'read_by_admin'        => false,
+            'read_by_parishioner'  => true,
+        ]);
+
+        // Notify admins
+        try {
+            $name     = Auth::user()->full_name;
+            $adminIds = User::whereIn('role', ['super_admin', 'parish_admin', 'parish_helpdesk'])
+                ->when($sacramentRequest->parish_id, fn ($q) =>
+                    $q->where(fn ($q2) =>
+                        $q2->where('parish_id', $sacramentRequest->parish_id)
+                           ->orWhere('role', 'super_admin')
+                    )
+                )
+                ->pluck('id');
+
+            $msgs = $adminIds->map(fn ($id) => [
+                'user_id'         => $id,
+                'message'         => "{$name} has requested cancellation of their {$sacramentRequest->sacrament_type} booking.",
+                'type'            => 'request_update',
+                'is_read'         => false,
+                'notifiable_type' => SacramentRequest::class,
+                'notifiable_id'   => $sacramentRequest->id,
+                'created_at'      => now(),
+                'updated_at'      => now(),
+            ])->toArray();
+
+            if (!empty($msgs)) Notification::insert($msgs);
+        } catch (\Throwable $e) {
+            Log::warning('requestCancellation: notification failed', ['error' => $e->getMessage()]);
+        }
+
+        return response()->json([
+            'status'  => 'cancellation_requested',
+            'message' => 'Cancellation request submitted. The parish will review it shortly.',
+        ]);
     }
 
     public function markNotificationsRead(): JsonResponse

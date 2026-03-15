@@ -100,6 +100,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
         Route::get('/{sacramentRequest}/certificate',          [BookingController::class, 'certificate'])->name('certificate');
         Route::post('/{sacramentRequest}/payment',             [BookingController::class, 'submitPayment'])->name('payment');
         Route::post('/{sacramentRequest}/clergy-respond',      [BookingController::class, 'respondClergy'])->name('clergy-respond');
+        Route::post('/{sacramentRequest}/request-cancellation', [BookingController::class, 'requestCancellation'])->name('request-cancellation');
         Route::get('/{sacramentRequest}/messages',             [BookingController::class, 'messages'])->name('messages');
         Route::post('/{sacramentRequest}/messages',            [BookingController::class, 'sendMessage'])->name('messages.send');
     });
@@ -185,7 +186,9 @@ Route::prefix('admin')
                 Route::get('/sacrament-requests/stats',                                [AdminSacramentRequestController::class, 'stats'])->name('sacrament-requests.stats');
                 Route::get('/sacrament-requests',                                      [AdminSacramentRequestController::class, 'index'])->name('sacrament-requests.index');
                 Route::get('/sacrament-requests/{sacramentRequest}',                   [AdminSacramentRequestController::class, 'show'])->name('sacrament-requests.show');
-                Route::patch('/sacrament-requests/{sacramentRequest}',                 [AdminSacramentRequestController::class, 'update'])->name('sacrament-requests.update');
+                Route::patch('/sacrament-requests/{sacramentRequest}',                          [AdminSacramentRequestController::class, 'update'])->name('sacrament-requests.update');
+                Route::post('/sacrament-requests/{sacramentRequest}/cancel',                    [AdminSacramentRequestController::class, 'adminCancel'])->name('sacrament-requests.cancel');
+                Route::post('/sacrament-requests/{sacramentRequest}/review-cancellation',       [AdminSacramentRequestController::class, 'reviewCancellation'])->name('sacrament-requests.review-cancellation');
                 Route::post('/sacrament-requests/{sacramentRequest}/assign-clergy',    [AdminSacramentRequestController::class, 'assignClergy'])->name('sacrament-requests.assign-clergy');
                 Route::get('/sacrament-requests/{sacramentRequest}/available-clergy',  [AdminSacramentRequestController::class, 'availableClergy'])->name('sacrament-requests.available-clergy');
                 Route::post('/sacrament-requests/{sacramentRequest}/verify-payment',   [AdminSacramentRequestController::class, 'verifyPayment'])->name('sacrament-requests.verify-payment');

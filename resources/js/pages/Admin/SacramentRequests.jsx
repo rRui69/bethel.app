@@ -3,7 +3,7 @@ import React, { useState, useEffect, useMemo, useRef, useCallback } from 'react'
 import {
     FaCheck, FaXmark, FaMagnifyingGlass, FaX, FaPersonPraying,
     FaCreditCard, FaComment, FaPaperPlane, FaSpinner, FaChevronDown, FaPaperclip, FaUpRightFromSquare,
-    FaMoneyBillWave,
+    FaMoneyBillWave, FaBan, FaCircleCheck, FaCircleXmark,
 } from 'react-icons/fa6';
 
 // ── Status Badge ───────────────────────────────────────────────
@@ -522,6 +522,36 @@ function SacramentRequestDetailModal({ requestId, onClose, onStatusChange }) {
 
     useEffect(() => { load(); }, [load]);
 
+    const [cancelModal,       setCancelModal]       = useState(false); // admin-initiated cancel
+    const [reviewModal,       setReviewModal]       = useState(false); // review parishioner's request
+    const [cancelReason,      setCancelReason]      = useState('');
+    const [cancelSaving,      setCancelSaving]      = useState(false);
+
+    const handleAdminCancel = async () => {
+        if (!cancelReason.trim() || cancelReason.trim().length < 10) return;
+        setCancelSaving(true);
+        try {
+            await axios.post(`/admin/api/sacrament-requests/${requestId}/cancel`, { reason: cancelReason });
+            setData(prev => ({ ...prev, status: 'cancelled' }));
+            if (onStatusChange) onStatusChange(requestId, 'cancelled');
+            setCancelModal(false);
+            setCancelReason('');
+        } catch { alert('Failed to cancel request.'); }
+        finally { setCancelSaving(false); }
+    };
+
+    const handleReviewCancellation = async (action) => {
+        setCancelSaving(true);
+        try {
+            await axios.post(`/admin/api/sacrament-requests/${requestId}/review-cancellation`, { action });
+            const newStatus = action === 'approve' ? 'cancelled' : 'cancellation_rejected';
+            setData(prev => ({ ...prev, status: newStatus }));
+            if (onStatusChange) onStatusChange(requestId, newStatus);
+            setReviewModal(false);
+        } catch { alert('Failed to process cancellation review.'); }
+        finally { setCancelSaving(false); }
+    };
+
     const handleStatusChange = async (newStatus) => {
         if (!confirm(`Mark this request as ${newStatus}?`)) return;
         setSaving(true);
@@ -818,18 +848,116 @@ function SacramentRequestDetailModal({ requestId, onClose, onStatusChange }) {
                             {saving ? 'Saving…' : 'Save Notes'}
                         </button>
                     )}
+                    {/* Pending — approve / reject / cancel */}
                     {data?.status === 'pending' && activeTab === 'details' && (
                         <>
                             <button className="um-btn um-btn--danger"  onClick={() => handleStatusChange('rejected')} disabled={saving}>
                                 <FaXmark size={11} /> Reject
+                            </button>
+                            <button className="um-btn um-btn--outline" style={{ color: '#ef4444', borderColor: '#ef4444' }}
+                                onClick={() => setCancelModal(true)} disabled={saving}>
+                                <FaBan size={11} /> Cancel Booking
                             </button>
                             <button className="um-btn um-btn--success" onClick={() => handleStatusChange('approved')} disabled={saving}>
                                 <FaCheck size={11} /> Approve
                             </button>
                         </>
                     )}
+                    {/* Approved — can still cancel */}
+                    {data?.status === 'approved' && activeTab === 'details' && (
+                        <button className="um-btn um-btn--outline" style={{ color: '#ef4444', borderColor: '#ef4444' }}
+                            onClick={() => setCancelModal(true)} disabled={saving}>
+                            <FaBan size={11} /> Cancel Booking
+                        </button>
+                    )}
+                    {/* Parishioner requested cancellation — review it */}
+                    {data?.status === 'cancellation_requested' && activeTab === 'details' && (
+                        <button className="um-btn um-btn--primary"
+                            onClick={() => setReviewModal(true)} disabled={saving}>
+                            Review Cancellation Request
+                        </button>
+                    )}
                 </div>
             </div>
+
+            {/* Admin Cancel Modal */}
+            {cancelModal && (
+                <div className="um-overlay" style={{ zIndex: 1080 }} onClick={() => setCancelModal(false)}>
+                    <div className="um-modal" style={{ maxWidth: 440 }} onClick={e => e.stopPropagation()}>
+                        <div className="um-modal__header">
+                            <h2 className="um-modal__title">Cancel Booking</h2>
+                            <button className="um-modal__close" onClick={() => setCancelModal(false)}><FaX size={12} /></button>
+                        </div>
+                        <div className="um-modal__body">
+                            <p style={{ fontSize: '0.85rem', color: 'var(--text-muted)', marginBottom: 12 }}>
+                                This will cancel the booking and notify the parishioner via inbox message and email. A reason is required.
+                            </p>
+                            <label className="um-label">Reason for Cancellation <span style={{ color: '#ef4444' }}>*</span></label>
+                            <textarea
+                                className="um-input"
+                                rows={4}
+                                placeholder="Explain why this booking is being cancelled…"
+                                value={cancelReason}
+                                onChange={e => setCancelReason(e.target.value)}
+                                style={{ resize: 'vertical' }}
+                            />
+                            {cancelReason.trim().length > 0 && cancelReason.trim().length < 10 && (
+                                <div style={{ fontSize: '0.75rem', color: '#ef4444', marginTop: 4 }}>
+                                    Please provide a more detailed reason (at least 10 characters).
+                                </div>
+                            )}
+                        </div>
+                        <div className="um-modal__footer">
+                            <button className="um-btn um-btn--outline" onClick={() => setCancelModal(false)} disabled={cancelSaving}>
+                                Go Back
+                            </button>
+                            <button
+                                className="um-btn um-btn--danger"
+                                onClick={handleAdminCancel}
+                                disabled={cancelSaving || cancelReason.trim().length < 10}
+                            >
+                                {cancelSaving ? <><FaSpinner size={11} style={{ animation: 'spin 1s linear infinite' }} /> Cancelling…</> : <><FaBan size={11} /> Confirm Cancel</>}
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* Review Parishioner Cancellation Modal */}
+            {reviewModal && (
+                <div className="um-overlay" style={{ zIndex: 1080 }} onClick={() => setReviewModal(false)}>
+                    <div className="um-modal" style={{ maxWidth: 440 }} onClick={e => e.stopPropagation()}>
+                        <div className="um-modal__header">
+                            <h2 className="um-modal__title">Review Cancellation Request</h2>
+                            <button className="um-modal__close" onClick={() => setReviewModal(false)}><FaX size={12} /></button>
+                        </div>
+                        <div className="um-modal__body">
+                            <p style={{ fontSize: '0.85rem', color: 'var(--text-muted)', marginBottom: 8 }}>
+                                The parishioner has requested to cancel this booking.
+                            </p>
+                            {data?.cancellation_reason && (
+                                <div style={{ background: 'var(--bg-hover)', borderRadius: 8, padding: '10px 14px', fontSize: '0.85rem', marginBottom: 12 }}>
+                                    <div style={{ fontSize: '0.72rem', fontWeight: 700, color: 'var(--text-muted)', marginBottom: 4, textTransform: 'uppercase', letterSpacing: '0.05em' }}>Their Reason</div>
+                                    {data.cancellation_reason}
+                                </div>
+                            )}
+                            <p style={{ fontSize: '0.82rem', color: 'var(--text-muted)' }}>
+                                <strong>Approve</strong> — booking becomes cancelled.<br />
+                                <strong>Reject</strong> — booking returns to its prior status and parishioner is notified.
+                            </p>
+                        </div>
+                        <div className="um-modal__footer">
+                            <button className="um-btn um-btn--outline" onClick={() => setReviewModal(false)} disabled={cancelSaving}>Close</button>
+                            <button className="um-btn um-btn--danger"   onClick={() => handleReviewCancellation('reject')}  disabled={cancelSaving}>
+                                <FaCircleXmark size={11} /> Reject Request
+                            </button>
+                            <button className="um-btn um-btn--success"  onClick={() => handleReviewCancellation('approve')} disabled={cancelSaving}>
+                                <FaCircleCheck size={11} /> Approve Cancel
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
         </div>
     );
 }
@@ -927,6 +1055,9 @@ export default function SacramentRequests({ onStatsRefresh }) {
                         <option value="pending">Pending</option>
                         <option value="approved">Approved</option>
                         <option value="rejected">Rejected</option>
+                        <option value="cancellation_requested">Cancellation Requested</option>
+                        <option value="cancelled">Cancelled</option>
+                        <option value="cancellation_rejected">Cancellation Rejected</option>
                     </select>
                 </div>
 

@@ -1833,3 +1833,8 @@ body {
 [data-theme="dark"] .um-table-row-clickable:hover td {
     background: rgba(255, 255, 255, 0.04);
 }
+
+/* Sacrament request — new cancellation statuses */
+.sr-status-badge--cancelled              { background: rgba(107,114,128,0.15); color: #4b5563; }
+.sr-status-badge--cancellation_requested { background: rgba(245,158,11,0.15);  color: #b45309; }
+.sr-status-badge--cancellation_rejected  { background: rgba(239,68,68,0.15);   color: #dc2626; }

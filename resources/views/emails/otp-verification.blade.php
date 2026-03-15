@@ -31,7 +31,7 @@
         {{-- Header --}}
         <div class="header">
             <div class="logo">Bethel<span>App</span></div>
-            <div class="subtitle">BethelApp - Digital Parish Management WebApp</div>
+            <div class="subtitle">Digital Parish Management WebApp</div>
         </div>
 
         {{-- Body --}}

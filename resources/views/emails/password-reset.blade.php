@@ -29,7 +29,7 @@
 
         <div class="header">
             <div class="logo">Bethel<span>App</span></div>
-            <div class="subtitle">House of God — Digital Parish Portal</div>
+            <div class="subtitle">Digital Parish Management WebApp</div>
         </div>
 
         <div class="body">
