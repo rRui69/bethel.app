@@ -83,7 +83,7 @@ export default function ParishPage({
                         id="section-livestream"
                     />
                     {/* LivestreamWidget is self-contained — it polls its own endpoint */}
-                    <LivestreamWidget />
+                    <LivestreamWidget showOfflineState={true} />
                 </section>
 
             </div>

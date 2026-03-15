@@ -26,6 +26,7 @@ class ClergyProfile extends Model
         'user_id',
         'parish_id',
         'title',
+        'custom_title',
         'specialization',
         'bio',
         'image_url',

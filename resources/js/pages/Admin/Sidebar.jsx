@@ -17,7 +17,7 @@ const NAV_SECTIONS = [
                 icon:  FaGauge,
                 href:  '/admin/dashboard',
                 badge: null,
-                roles: ['super_admin', 'parish_admin'],
+                roles: ['super_admin', 'parish_admin', 'parish_helpdesk'],
             },
             {
                 id:    'clergy-dashboard',
@@ -70,7 +70,7 @@ const NAV_SECTIONS = [
                 icon:  FaHandsPraying,
                 href:  '/admin/sacraments',
                 badge: 'pending',
-                roles: ['super_admin', 'parish_admin'],
+                roles: ['super_admin', 'parish_admin', 'parish_helpdesk'],
             },
             {
                 id:    'events',
@@ -78,7 +78,7 @@ const NAV_SECTIONS = [
                 icon:  FaCalendarDays,
                 href:  '/admin/events',
                 badge: null,
-                roles: ['super_admin', 'parish_admin'],
+                roles: ['super_admin', 'parish_admin', 'parish_helpdesk'],
             },
             {
                 id:    'mass-schedules',
@@ -86,7 +86,7 @@ const NAV_SECTIONS = [
                 icon:  FaCalendarCheck,
                 href:  '/admin/mass-schedules',
                 badge: null,
-                roles: ['super_admin', 'parish_admin'],
+                roles: ['super_admin', 'parish_admin', 'parish_helpdesk'],
             },
             {
                 id:    'announcements',
@@ -94,7 +94,7 @@ const NAV_SECTIONS = [
                 icon:  FaBullhorn,
                 href:  '/admin/announcements',
                 badge: null,
-                roles: ['super_admin', 'parish_admin'],
+                roles: ['super_admin', 'parish_admin', 'parish_helpdesk'],
             },
             {
                 id:    'livestreams',
@@ -102,7 +102,7 @@ const NAV_SECTIONS = [
                 icon:  FaTowerBroadcast,
                 href:  '/admin/livestreams',
                 badge: null,
-                roles: ['super_admin', 'parish_admin'],
+                roles: ['super_admin', 'parish_admin', 'parish_helpdesk'],
             },
         ],
     },

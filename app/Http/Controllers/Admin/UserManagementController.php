@@ -112,7 +112,7 @@ class UserManagementController extends AdminBaseController
             'username'    => ['required', 'string', 'min:3', 'max:255', 'unique:users', 'regex:/^[a-zA-Z0-9._-]+$/'],
             'email'       => ['required', 'string', 'email', 'max:255', 'unique:users'],
             'password'    => ['required', Rules\Password::defaults()],
-            'role'        => ['required', Rule::in(['super_admin', 'parish_admin', 'clergymen', 'parishioner'])],
+            'role'        => ['required', Rule::in(['super_admin', 'parish_admin', 'parish_helpdesk', 'clergymen', 'parishioner'])],
             'first_name'  => ['required', 'string', 'max:255'],
             'middle_name' => ['nullable', 'string', 'max:255'],
             'last_name'   => ['required', 'string', 'max:255'],
@@ -159,7 +159,7 @@ class UserManagementController extends AdminBaseController
             'barangay'       => ['sometimes', 'required', 'string', 'max:255'],
             'street_address' => ['sometimes', 'nullable', 'string', 'max:500'],
             'zip_code'       => ['sometimes', 'nullable', 'string', 'max:10'],
-            'role'           => ['sometimes', Rule::in(['super_admin', 'parish_admin', 'clergymen', 'parishioner'])],
+            'role'           => ['sometimes', Rule::in(['super_admin', 'parish_admin', 'parish_helpdesk', 'clergymen', 'parishioner'])],
             'account_status' => ['sometimes', Rule::in(['Active', 'Inactive', 'Suspended'])],
         ]);
 
@@ -255,11 +255,12 @@ class UserManagementController extends AdminBaseController
     private function roleLabel(string $role): string
     {
         return match ($role) {
-            'super_admin'  => 'Ministerial Head IT Admin',
-            'parish_admin' => 'Ministerial IT Helpdesk',
-            'clergymen'    => 'Clergymen',
-            'parishioner'  => 'Parishioner',
-            default        => 'Unknown',
+            'super_admin'     => 'Diocesan Head IT Admin',
+            'parish_admin'    => 'Ministerial Head IT Admin',
+            'parish_helpdesk' => 'Ministerial IT Helpdesk',
+            'clergymen'       => 'Clergymen',
+            'parishioner'     => 'Parishioner',
+            default           => 'Unknown',
         };
     }
 }

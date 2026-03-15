@@ -30,14 +30,21 @@ class ParishController extends AdminBaseController
     // ── GET /admin/api/parishes ───────────────────────────────────
     public function index(): JsonResponse
     {
-        $parishes = Parish::withCount([
+        $user  = auth()->user();
+        $query = Parish::withCount([
             'users as users_count',
             'clergyProfiles as clergy_count',
             'events as pending_requests' => fn ($q) => $q->sacramental()->pending(),
-        ])
-        ->orderBy('name')
-        ->get()
-        ->map(fn ($p) => $this->formatParish($p));
+        ]);
+
+        // parish_admin and parish_helpdesk see only their own parish
+        if (! $user->isSuperAdmin()) {
+            $query->where('id', $user->parish_id);
+        }
+
+        $parishes = $query->orderBy('name')
+            ->get()
+            ->map(fn ($p) => $this->formatParish($p));
 
         return response()->json($parishes);
     }
@@ -162,7 +169,7 @@ class ParishController extends AdminBaseController
     {
         $search = $request->string('search')->trim();
 
-        $users = User::whereIn('role', ['parish_admin', 'parishioner', 'clergymen'])
+        $users = User::whereIn('role', ['parish_admin', 'parish_helpdesk', 'parishioner', 'clergymen'])
             ->where('account_status', 'Active')
             ->when($search->isNotEmpty(), fn ($q) =>
                 $q->where(fn ($q2) =>
@@ -198,7 +205,7 @@ class ParishController extends AdminBaseController
         $user = User::findOrFail($data['user_id']);
 
         if ($user->role === 'super_admin') {
-            return response()->json(['message' => 'Cannot assign super admins to a parish.'], 422);
+            return response()->json(['message' => 'Cannot assign Diocesan Admins to a parish.'], 422);
         }
 
         $user->update(['parish_id' => $parish->id]);

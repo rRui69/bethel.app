@@ -3,7 +3,9 @@ import {
     FaUserPlus, FaMagnifyingGlass, FaEllipsisVertical, FaPen, FaBan,
     FaCircleCheck, FaX, FaCircle, FaTriangleExclamation, FaCheck,
     FaKey, FaChurch, FaPlus, FaTrash, FaEnvelope, FaPhone,
+    FaImage, FaCloudArrowUp, FaSpinner,
 } from 'react-icons/fa6';
+import { useCloudinaryUpload } from '@/hooks/useCloudinaryUpload';
 
 function useDebounce(value, delay = 400) {
     const [deb, setDeb] = useState(value);
@@ -14,7 +16,7 @@ function useDebounce(value, delay = 400) {
     return deb;
 }
 
-const TITLES     = ['Fr.', 'Rev.', 'Msgr.', 'Bp.', 'Cardinal', 'Deacon'];
+const TITLES     = ['Fr.', 'Rev.', 'Msgr.', 'Bp.', 'Cardinal', 'Deacon', 'Other'];
 const DAYS       = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
 const MASS_TYPES = ['Regular Mass', 'Family Mass', 'Youth Mass', 'Daily Mass', 'Evening Mass', 'Midday Mass', 'Anticipated Mass', 'Pilgrimage Mass'];
 
@@ -209,6 +211,101 @@ function RowActions({ clergy, onEdit, onToggleStatus, onResetPassword }) {
     );
 }
 
+// ── Clergy Image Upload ───────────────────────────────────────────────
+// Uploads to Cloudinary directly from the browser, then stores the
+// returned URL in the parent form's state via onImageChange().
+// The URL is submitted to the server as part of the normal Save request.
+function ClergyImageUpload({ currentImage, onImageChange, style }) {
+    const { upload, uploading } = useCloudinaryUpload();
+    const [preview, setPreview] = useState(currentImage ?? null);
+    const [msg, setMsg]         = useState(null);
+    const inputRef = useRef();
+
+    async function handleFile(e) {
+        const file = e.target.files?.[0];
+        if (!file) return;
+        setMsg(null);
+        try {
+            const url = await upload(file, 'bethel_app/clergy');
+            setPreview(url);
+            onImageChange(url);          // write into parent form state
+            setMsg({ type: 'ok', text: 'Photo ready — click Save Changes to apply.' });
+        } catch (err) {
+            setMsg({ type: 'err', text: err.message ?? 'Upload failed.' });
+        } finally {
+            e.target.value = '';
+        }
+    }
+
+    function handleRemove() {
+        setPreview(null);
+        onImageChange('');               // empty string clears in DB
+        setMsg({ type: 'ok', text: 'Photo removed — click Save Changes to apply.' });
+    }
+
+    return (
+        <div style={{ ...style, display: 'flex', alignItems: 'center', gap: 16,
+            padding: '14px 16px', borderRadius: 10,
+            background: 'var(--bg-hover, #f8fafc)',
+            border: '1px solid var(--border-color, #e5e7eb)' }}>
+
+            {/* Thumbnail */}
+            <div style={{ width: 64, height: 64, borderRadius: 10, overflow: 'hidden', flexShrink: 0,
+                background: 'var(--border-color, #e5e7eb)',
+                display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                {preview
+                    ? <img src={preview} alt="Clergy" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                    : <FaImage size={22} style={{ color: 'var(--text-muted)', opacity: 0.4 }} />
+                }
+            </div>
+
+            <div style={{ flex: 1, minWidth: 0 }}>
+                <div style={{ fontWeight: 600, fontSize: '0.83rem', marginBottom: 4 }}>Profile Photo</div>
+                <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginBottom: 8 }}>
+                    JPG or PNG · Max 5 MB · Saved when you click Save Changes
+                </div>
+
+                {msg && (
+                    <div style={{ fontSize: '0.75rem', marginBottom: 8,
+                        color: msg.type === 'ok' ? '#16a34a' : '#dc2626' }}>
+                        {msg.text}
+                    </div>
+                )}
+
+                <div style={{ display: 'flex', gap: 8 }}>
+                    <input ref={inputRef} type="file" accept="image/*"
+                        style={{ display: 'none' }} onChange={handleFile} />
+                    <button
+                        type="button"
+                        onClick={() => inputRef.current?.click()}
+                        disabled={uploading}
+                        style={{ display: 'inline-flex', alignItems: 'center', gap: 6,
+                            padding: '6px 12px', borderRadius: 7, fontSize: '0.78rem', fontWeight: 600,
+                            background: 'var(--bethel-primary, #1a3c5e)', color: '#fff',
+                            border: 'none', cursor: uploading ? 'not-allowed' : 'pointer',
+                            opacity: uploading ? 0.7 : 1 }}>
+                        {uploading
+                            ? <><FaSpinner size={11} style={{ animation: 'spin 1s linear infinite' }} /> Uploading…</>
+                            : <><FaCloudArrowUp size={11} /> {preview ? 'Change Photo' : 'Upload Photo'}</>
+                        }
+                    </button>
+                    {preview && (
+                        <button
+                            type="button"
+                            onClick={handleRemove}
+                            style={{ display: 'inline-flex', alignItems: 'center', gap: 6,
+                                padding: '6px 12px', borderRadius: 7, fontSize: '0.78rem', fontWeight: 600,
+                                background: 'transparent', color: '#dc2626',
+                                border: '1px solid rgba(220,38,38,0.3)', cursor: 'pointer' }}>
+                            <FaTrash size={11} /> Remove
+                        </button>
+                    )}
+                </div>
+            </div>
+        </div>
+    );
+}
+
 // ── Clergy Modal ───────────────────────────────────────────────────────
 function ClergyModal({ mode, clergy, parishes, onSave, onClose, loading, errors, apiError }) {
     const isEdit = mode === 'edit';
@@ -220,7 +317,7 @@ function ClergyModal({ mode, clergy, parishes, onSave, onClose, loading, errors,
         phone: '', gender: '', birth_date: '',
         // Address
         country: 'Philippines', province: '', city: '', barangay: '', street_address: '', zip_code: '',
-        parish_id: parishes[0]?.id || '', title: 'Fr.', specialization: '', schedule: [],
+        parish_id: parishes[0]?.id || '', title: 'Fr.', custom_title: '', specialization: '', image_url: '', schedule: [],
     };
 
     const [form, setForm] = useState(isEdit && clergy ? {
@@ -242,7 +339,9 @@ function ClergyModal({ mode, clergy, parishes, onSave, onClose, loading, errors,
         zip_code:       clergy.zip_code       || '',
         parish_id:      clergy.parish_id      || parishes[0]?.id || '',
         title:          clergy.title          || 'Fr.',
+        custom_title:   clergy.custom_title   || '',
         specialization: clergy.specialization || '',
+        image_url:      clergy.image          || '',
         schedule:       clergy.schedule       || [],
     } : blank);
 
@@ -261,7 +360,7 @@ function ClergyModal({ mode, clergy, parishes, onSave, onClose, loading, errors,
             personal: ['first_name','last_name','middle_name','phone','gender','birth_date',
                        'country','province','city','barangay','street_address','zip_code'],
             account:  ['email','username','password','password_confirmation'],
-            ministry: ['title','parish_id','specialization'],
+            ministry: ['title','custom_title','parish_id','specialization'],
             schedule: ['schedule'],
         };
         return (map[tab] || []).some(k => errors[k]);
@@ -379,6 +478,13 @@ function ClergyModal({ mode, clergy, parishes, onSave, onClose, loading, errors,
 
                     {activeTab === 'ministry' && (
                         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px' }}>
+
+                            {/* ── Clergy Photo ──────────────────────── */}
+                            <ClergyImageUpload
+                                currentImage={form.image_url || null}
+                                onImageChange={(url) => setForm(f => ({ ...f, image_url: url }))}
+                                style={{ gridColumn: '1 / -1' }}
+                            />
                             <Field label="Title" error={errors?.title} required>
                                 <select style={inp} value={form.title} onChange={set('title')}>
                                     {TITLES.map(t => <option key={t}>{t}</option>)}
@@ -389,8 +495,21 @@ function ClergyModal({ mode, clergy, parishes, onSave, onClose, loading, errors,
                                     {parishes.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
                                 </select>
                             </Field>
-                            <Field label="Specialization" value={form.specialization} onChange={set('specialization')} error={errors?.specialization}
-                                hint="e.g. Baptism, Marriage, Anointing" style={{ gridColumn: '1 / -1' }} />
+                            {/* Custom title input — only shown when "Other" is selected */}
+                            {form.title === 'Other' && (
+                                <Field
+                                    label="Custom Title"
+                                    name="custom_title"
+                                    value={form.custom_title}
+                                    onChange={set('custom_title')}
+                                    error={errors?.custom_title}
+                                    hint='Enter the ecclesiastical title e.g. "Deacon", "Bishop Emeritus"'
+                                    style={{ gridColumn: '1 / -1' }}
+                                    required
+                                />
+                            )}
+                            <Field label="Position / Role" value={form.specialization} onChange={set('specialization')} error={errors?.specialization}
+                                hint="e.g. Parish Priest, Chaplain, Vicar" style={{ gridColumn: '1 / -1' }} />
                         </div>
                     )}
 

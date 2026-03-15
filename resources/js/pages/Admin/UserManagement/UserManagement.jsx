@@ -18,11 +18,12 @@ function useDebounce(value, delay = 400) {
 
 // Constants
 const ROLES = [
-    { value: 'all',          label: 'All Roles' },
-    { value: 'super_admin',  label: 'Ministerial Head IT Admin' },
-    { value: 'parish_admin', label: 'Ministerial IT Helpdesk' },
-    { value: 'clergymen',    label: 'Clergymen' },
-    { value: 'parishioner',  label: 'Parishioner' },
+    { value: 'all',              label: 'All Roles' },
+    { value: 'super_admin',      label: 'Diocesan Head IT Admin' },
+    { value: 'parish_admin',     label: 'Ministerial Head IT Admin' },
+    { value: 'parish_helpdesk',  label: 'Ministerial IT Helpdesk' },
+    { value: 'clergymen',        label: 'Clergymen' },
+    { value: 'parishioner',      label: 'Parishioner' },
 ];
 
 const STATUSES = [

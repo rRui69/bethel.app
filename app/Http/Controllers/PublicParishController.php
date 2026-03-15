@@ -124,7 +124,7 @@ class PublicParishController extends Controller
         $clergy = User::where('parish_id', $parish->id)
             ->where('role', 'clergymen')
             ->where('account_status', 'Active')
-            ->with('clergyProfile:user_id,title,specialization,bio,image_url')
+            ->with('clergyProfile:user_id,title,custom_title,specialization,bio,image_url')
             ->select('id', 'first_name', 'last_name', 'birth_date')
             ->orderBy('last_name')
             ->get()
@@ -135,6 +135,7 @@ class PublicParishController extends Controller
                     ? "{$u->clergyProfile->title} {$u->full_name}"
                     : $u->full_name,
                 'title'          => $u->clergyProfile?->title ?? '',
+                'custom_title'   => $u->clergyProfile?->custom_title ?? '',
                 'specialization' => $u->clergyProfile?->specialization ?? '',
                 'bio'            => $u->clergyProfile?->bio ?? '',
                 'image'          => $u->clergyProfile?->image_url ?? null,

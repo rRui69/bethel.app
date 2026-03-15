@@ -20,10 +20,11 @@ abstract class AdminBaseController extends Controller
                 'name'  => $admin->full_name,
                 'role'  => $admin->role,
                 'label' => match ($admin->role) {
-                    'super_admin'  => 'Ministerial Head IT Administrator',
-                    'parish_admin' => 'Ministerial IT Helpdesk',
-                    'clergymen'    => 'Clergymen',
-                    default        => 'Staff',
+                    'super_admin'      => 'Diocesan Head IT Admin',
+                    'parish_admin'     => 'Ministerial Head IT Admin',
+                    'parish_helpdesk'  => 'Ministerial IT Helpdesk',
+                    'clergymen'        => 'Clergymen',
+                    default            => 'Staff',
                 },
                 'email' => $admin->email,
             ],
@@ -46,7 +47,7 @@ abstract class AdminBaseController extends Controller
                     'read'             => $n->is_read,
                     'type'             => $n->type,
                     'notifiable_type'  => $n->notifiable_type,
-                    'notifiable_id'    => $n->notifiable_id,   
+                    'notifiable_id'    => $n->notifiable_id,
                 ])
                 ->toArray(),
 

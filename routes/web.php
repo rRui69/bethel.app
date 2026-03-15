@@ -195,7 +195,7 @@ Route::prefix('admin')
                 // Misc
                 Route::post('/notifications/read', [UserManagementController::class, 'markNotificationRead'])->name('notifications.read');
 
-                // Clergy Management API (super_admin only, enforced in controller) 
+                // Clergy Management API (super_admin only, enforced in controller)
                 Route::get('/clergy/stats',                [ClergyManagementController::class, 'stats'])->name('clergy.stats');
                 Route::get('/clergy',                      [ClergyManagementController::class, 'index'])->name('clergy.index');
                 Route::post('/clergy',                     [ClergyManagementController::class, 'store'])->name('clergy.store');
@@ -232,6 +232,16 @@ Route::prefix('admin')
 
                 // Agora publisher token
                 Route::post('/livestreams/publisher-token',         [AdminLivestreamController::class, 'publisherToken'])->name('livestreams.publisher-token');
+
+                // Parish Images (max 5 per parish)
+                Route::get('/parishes/{parish}/images',            [\App\Http\Controllers\Admin\ParishImageController::class, 'index'])->name('parishes.images.index');
+                Route::post('/parishes/{parish}/images',           [\App\Http\Controllers\Admin\ParishImageController::class, 'store'])->name('parishes.images.store');
+                Route::delete('/parishes/{parish}/images/{image}', [\App\Http\Controllers\Admin\ParishImageController::class, 'destroy'])->name('parishes.images.destroy');
+                Route::patch('/parishes/{parish}/images/reorder',  [\App\Http\Controllers\Admin\ParishImageController::class, 'reorder'])->name('parishes.images.reorder');
+
+                // Clergy image upload (stored in clergy_profiles.image_url)
+                Route::post('/clergy/{user}/image',   [\App\Http\Controllers\Admin\ClergyImageController::class, 'store'])->name('clergy.image.store');
+                Route::delete('/clergy/{user}/image', [\App\Http\Controllers\Admin\ClergyImageController::class, 'destroy'])->name('clergy.image.destroy');
 
                 // Parish Management (super_admin only — enforced in controller)
                 Route::get('/parishes',                                    [ParishController::class, 'index'])->name('parishes.index');

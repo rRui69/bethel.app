@@ -10,10 +10,12 @@ class DatabaseSeeder extends Seeder
     {
         // ── ORDER MATTERS — respect foreign key dependencies ──
         $this->call([
-            // 1. Users first
+            // 1. Users first (super_admin + sample parishioners)
             \Database\Seeders\UserSeeder::class,
             // 2. Parishes
             \Database\Seeders\ParishSeeder::class,
+            // 3. Parish staff — 1 parish_admin + 1 parish_helpdesk per parish
+            \Database\Seeders\StaffSeeder::class,
             // 3. Clergy (depends on parishes)
             \Database\Seeders\ClergySeeder::class,
             // 4. Events (depends on parishes, clergy, users)

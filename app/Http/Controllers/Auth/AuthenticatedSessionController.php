@@ -22,9 +22,9 @@ class AuthenticatedSessionController extends Controller
         $request->session()->regenerate();
 
         $redirectUrl = match(auth()->user()->role) {
-            'super_admin', 'parish_admin' => route('admin.dashboard'),
-            'clergymen'                   => route('admin.clergy-dashboard'),
-            default                       => route('home'),
+            'super_admin', 'parish_admin', 'parish_helpdesk' => route('admin.dashboard'),
+            'clergymen'                                       => route('admin.clergy-dashboard'),
+            default                                           => route('home'),
         };
 
         return response()->json([

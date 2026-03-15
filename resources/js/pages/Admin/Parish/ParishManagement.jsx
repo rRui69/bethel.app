@@ -4,7 +4,9 @@ import {
     FaX, FaCheck, FaSpinner, FaUsers, FaPersonPraying,
     FaCircle, FaLocationDot, FaPhone, FaEnvelope,
     FaUserPlus, FaUserMinus, FaCircleInfo, FaTriangleExclamation,
+    FaImages, FaCloudArrowUp, FaArrowUp, FaArrowDown, FaImage,
 } from 'react-icons/fa6';
+import { useCloudinaryUpload } from '@/hooks/useCloudinaryUpload';
 
 // ── Shared helpers ────────────────────────────────────────────
 function useDebounce(value, delay = 350) {
@@ -91,8 +93,9 @@ function StatusBadge({ status }) {
 // ── Role Badge ────────────────────────────────────────────────
 function RoleBadge({ role }) {
     const map = {
-        super_admin:  { label: 'Head Admin',  bg: 'rgba(99,102,241,0.1)',  color: '#4f46e5' },
-        parish_admin: { label: 'IT Helpdesk', bg: 'rgba(14,165,233,0.1)', color: '#0284c7' },
+        super_admin:      { label: 'Diocesan Admin',   bg: 'rgba(200,151,58,0.1)',  color: '#c8973a' },
+        parish_admin:     { label: 'Head IT Admin',    bg: 'rgba(99,102,241,0.1)',  color: '#4f46e5' },
+        parish_helpdesk:  { label: 'IT Helpdesk',      bg: 'rgba(14,165,233,0.1)', color: '#0284c7' },
         clergymen:    { label: 'Clergy',      bg: 'rgba(200,151,58,0.1)', color: '#92400e' },
         parishioner:  { label: 'Parishioner', bg: 'rgba(107,114,128,0.1)',color: '#374151' },
     };
@@ -409,23 +412,186 @@ function AssignUserPanel({ parishId, onAssigned }) {
     );
 }
 
+// ── Parish Images Panel ───────────────────────────────────────
+function ParishImagesPanel({ parishId, images, max, onChanged }) {
+    const { upload, uploading } = useCloudinaryUpload();
+    const [removing, setRemoving] = useState(null);
+    const [reordering, setReordering] = useState(false);
+    const [msg, setMsg]   = useState(null);
+    const inputRef = useRef();
+
+    const atMax = images.length >= max;
+
+    async function handleFile(e) {
+        const file = e.target.files?.[0];
+        if (!file) return;
+        setMsg(null);
+        try {
+            const url = await upload(file, 'bethel_app/parishes');
+            const { data } = await axios.post(`/admin/api/parishes/${parishId}/images`, { image_url: url });
+            onChanged(prev => [...prev, data]);
+            setMsg({ type: 'ok', text: 'Photo added.' });
+        } catch (err) {
+            setMsg({ type: 'err', text: err.response?.data?.message ?? err.message ?? 'Upload failed.' });
+        } finally {
+            e.target.value = '';
+        }
+    }
+
+    async function handleRemove(imgId) {
+        setRemoving(imgId);
+        setMsg(null);
+        try {
+            await axios.delete(`/admin/api/parishes/${parishId}/images/${imgId}`);
+            onChanged(prev => prev.filter(i => i.id !== imgId));
+            setMsg({ type: 'ok', text: 'Photo removed.' });
+        } catch (err) {
+            setMsg({ type: 'err', text: err.response?.data?.message ?? 'Remove failed.' });
+        } finally {
+            setRemoving(null);
+        }
+    }
+
+    async function move(index, dir) {
+        const next = [...images];
+        const swap = index + dir;
+        if (swap < 0 || swap >= next.length) return;
+        [next[index], next[swap]] = [next[swap], next[index]];
+        onChanged(next);
+        setReordering(true);
+        try {
+            await axios.patch(`/admin/api/parishes/${parishId}/images/reorder`, {
+                ids: next.map(i => i.id),
+            });
+        } catch {}
+        finally { setReordering(false); }
+    }
+
+    return (
+        <div>
+            {/* Header row */}
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 14 }}>
+                <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>
+                    {images.length} of {max} photos · Drag order = carousel order on parish page
+                </div>
+                <div>
+                    <input ref={inputRef} type="file" accept="image/*" style={{ display: 'none' }} onChange={handleFile} />
+                    <button
+                        onClick={() => inputRef.current?.click()}
+                        disabled={uploading || atMax}
+                        style={{ display: 'inline-flex', alignItems: 'center', gap: 6,
+                            padding: '7px 14px', borderRadius: 8, fontSize: '0.8rem', fontWeight: 600,
+                            background: atMax ? 'var(--border-color,#e5e7eb)' : 'var(--bethel-primary,#1a3c5e)',
+                            color: atMax ? 'var(--text-muted)' : '#fff',
+                            border: 'none', cursor: (uploading || atMax) ? 'not-allowed' : 'pointer' }}
+                        title={atMax ? `Maximum ${max} photos reached` : 'Upload photo'}
+                    >
+                        {uploading
+                            ? <><FaSpinner size={11} style={{ animation: 'spin 1s linear infinite' }} /> Uploading…</>
+                            : <><FaCloudArrowUp size={11} /> Add Photo</>
+                        }
+                    </button>
+                </div>
+            </div>
+
+            {/* Feedback */}
+            {msg && (
+                <div style={{ marginBottom: 12, padding: '8px 12px', borderRadius: 8, fontSize: '0.8rem',
+                    background: msg.type === 'ok' ? 'rgba(22,163,74,0.08)' : 'rgba(220,38,38,0.08)',
+                    color: msg.type === 'ok' ? '#16a34a' : '#dc2626',
+                    border: `1px solid ${msg.type === 'ok' ? 'rgba(22,163,74,0.2)' : 'rgba(220,38,38,0.2)'}` }}>
+                    {msg.text}
+                </div>
+            )}
+
+            {/* Image grid */}
+            {images.length === 0 ? (
+                <div style={{ textAlign: 'center', padding: '2.5rem 1rem', color: 'var(--text-muted)', fontSize: '0.875rem',
+                    borderRadius: 10, border: '2px dashed var(--border-color,#e5e7eb)' }}>
+                    <FaImage size={28} style={{ display: 'block', margin: '0 auto 10px', opacity: 0.3 }} />
+                    No photos yet. Upload up to {max} photos for the parish page carousel.
+                </div>
+            ) : (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                    {images.map((img, i) => (
+                        <div key={img.id} style={{ display: 'flex', alignItems: 'center', gap: 12,
+                            padding: '8px 12px', borderRadius: 10,
+                            background: 'var(--bg-hover,#f8fafc)',
+                            border: '1px solid var(--border-color,#e5e7eb)' }}>
+
+                            {/* Thumbnail */}
+                            <div style={{ width: 56, height: 42, borderRadius: 7, overflow: 'hidden', flexShrink: 0,
+                                background: 'var(--border-color,#e5e7eb)' }}>
+                                <img src={img.image_url} alt={`Parish photo ${i + 1}`}
+                                    style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                            </div>
+
+                            {/* Order label */}
+                            <div style={{ fontSize: '0.78rem', color: 'var(--text-muted)', flexShrink: 0 }}>
+                                #{i + 1}
+                            </div>
+
+                            {/* URL truncated */}
+                            <div style={{ flex: 1, minWidth: 0, fontSize: '0.75rem', color: 'var(--text-muted)',
+                                whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                                {img.image_url}
+                            </div>
+
+                            {/* Controls */}
+                            <div style={{ display: 'flex', gap: 4, flexShrink: 0 }}>
+                                <button onClick={() => move(i, -1)} disabled={i === 0 || reordering}
+                                    title="Move up" style={btnStyle}>
+                                    <FaArrowUp size={10} />
+                                </button>
+                                <button onClick={() => move(i, 1)} disabled={i === images.length - 1 || reordering}
+                                    title="Move down" style={btnStyle}>
+                                    <FaArrowDown size={10} />
+                                </button>
+                                <button onClick={() => handleRemove(img.id)} disabled={removing === img.id}
+                                    title="Delete photo"
+                                    style={{ ...btnStyle, color: '#dc2626', borderColor: 'rgba(220,38,38,0.3)',
+                                        background: 'rgba(220,38,38,0.05)' }}>
+                                    {removing === img.id ? <FaSpinner size={10} /> : <FaTrash size={10} />}
+                                </button>
+                            </div>
+                        </div>
+                    ))}
+                </div>
+            )}
+        </div>
+    );
+}
+
+const btnStyle = {
+    width: 28, height: 28, borderRadius: 7,
+    border: '1px solid var(--border-color,#e5e7eb)',
+    background: 'var(--bg-card,#fff)',
+    cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center',
+    color: 'var(--text-muted)',
+};
+
 // ── Manage Parish Modal (Details + Assigned Users) ────────────
 function ManageParishModal({ parishId, onClose, onEdited }) {
     const [parish,  setParish]  = useState(null);
     const [users,   setUsers]   = useState([]);
+    const [images,  setImages]  = useState([]);
+    const [imgMax,  setImgMax]  = useState(5);
     const [loading, setLoading] = useState(true);
-    const [tab,     setTab]     = useState('details');  // details | users
+    const [tab,     setTab]     = useState('details');  // details | users | images
     const [removing, setRemoving] = useState(null);
     const [showEdit, setShowEdit] = useState(false);
 
     const load = useCallback(async () => {
         try {
-            const [pRes, uRes] = await Promise.all([
+            const [pRes, uRes, iRes] = await Promise.all([
                 axios.get(`/admin/api/parishes/${parishId}`),
                 axios.get(`/admin/api/parishes/${parishId}/users`),
+                axios.get(`/admin/api/parishes/${parishId}/images`),
             ]);
             setParish(pRes.data);
             setUsers(uRes.data);
+            setImages(iRes.data.images ?? []);
+            setImgMax(iRes.data.max ?? 5);
         } catch {}
         finally { setLoading(false); }
     }, [parishId]);
@@ -443,8 +609,9 @@ function ManageParishModal({ parishId, onClose, onEdited }) {
     };
 
     const TABS = [
-        { id: 'details', label: 'Overview'       },
-        { id: 'users',   label: `Users (${users.length})` },
+        { id: 'details', label: 'Overview'                    },
+        { id: 'users',   label: `Users (${users.length})`     },
+        { id: 'images',  label: `Photos (${images.length}/${imgMax})` },
     ];
 
     const detail = (icon, label, value) => value ? (
@@ -580,6 +747,15 @@ function ManageParishModal({ parishId, onClose, onEdited }) {
                                         }}
                                     />
                                 </>
+                            )}
+                            {/* ── IMAGES TAB ── */}
+                            {tab === 'images' && (
+                                <ParishImagesPanel
+                                    parishId={parishId}
+                                    images={images}
+                                    max={imgMax}
+                                    onChanged={setImages}
+                                />
                             )}
                         </>
                     )}

@@ -18,7 +18,7 @@ class ClergyManagementController extends AdminBaseController
     {
         // Only super_admin may manage clergy accounts
         if (! auth()->user()->isSuperAdmin()) {
-            abort(403, 'Only Ministerial Head IT Administrators can manage clergy.');
+            abort(403, 'Only Diocesan Head IT Administrators can manage clergy.');
         }
 
         $adminData           = $this->adminShellData();
@@ -35,7 +35,7 @@ class ClergyManagementController extends AdminBaseController
     public function index(Request $request)
     {
         $query = User::where('role', 'clergymen')
-            ->with(['clergyProfile.parish:id,name,city'])
+            ->with(['clergyProfile:user_id,parish_id,title,custom_title,specialization,image_url,bio', 'clergyProfile.parish:id,name,city'])
             ->withTrashed($request->boolean('with_deleted'));
 
         if ($request->filled('status')) {
@@ -75,7 +75,7 @@ class ClergyManagementController extends AdminBaseController
     {
         $this->abortIfNotClergy($user);
 
-        $user->load(['clergyProfile.parish:id,name,city']);
+        $user->load(['clergyProfile:user_id,parish_id,title,custom_title,specialization,image_url,bio', 'clergyProfile.parish:id,name,city']);
 
         return response()->json($this->formatClergy($user, withSchedule: true));
     }
@@ -109,8 +109,10 @@ class ClergyManagementController extends AdminBaseController
             'zip_code'       => 'nullable|string|max:10',
             // Clergy profile
             'parish_id'      => 'required|exists:parishes,id',
-            'title'          => 'required|in:Fr.,Rev.,Msgr.,Bp.,Cardinal,Deacon',
+            'title'          => 'required|in:Fr.,Rev.,Msgr.,Bp.,Cardinal,Deacon,Other',
+            'custom_title'   => 'nullable|required_if:title,Other|string|max:100',
             'specialization' => 'nullable|string|max:255',
+            'image_url'      => 'nullable|url|max:1000',
             'schedule'       => 'nullable|array',
             'schedule.*.day' => 'required_with:schedule|string|max:20',
             'schedule.*.time'=> 'required_with:schedule|string|max:20',
@@ -143,14 +145,16 @@ class ClergyManagementController extends AdminBaseController
                 'user_id'        => $user->id,
                 'parish_id'      => $validated['parish_id'],
                 'title'          => $validated['title'],
+                'custom_title'   => $validated['custom_title'] ?? null,
                 'specialization' => $validated['specialization'] ?? null,
+                'image_url'      => $validated['image_url'] ?? null,
                 'schedule'       => $validated['schedule'] ?? null,
             ]);
 
             return $user;
         });
 
-        $user->load(['clergyProfile.parish:id,name,city']);
+        $user->load(['clergyProfile:user_id,parish_id,title,custom_title,specialization,image_url,bio', 'clergyProfile.parish:id,name,city']);
 
         return response()->json($this->formatClergy($user, withSchedule: true), 201);
     }
@@ -184,8 +188,10 @@ class ClergyManagementController extends AdminBaseController
             'zip_code'       => 'nullable|string|max:10',
             // Clergy profile
             'parish_id'      => 'sometimes|required|exists:parishes,id',
-            'title'          => 'sometimes|required|in:Fr.,Rev.,Msgr.,Bp.,Cardinal,Deacon',
+            'title'          => 'sometimes|required|in:Fr.,Rev.,Msgr.,Bp.,Cardinal,Deacon,Other',
+            'custom_title'   => 'nullable|required_if:title,Other|string|max:100',
             'specialization' => 'nullable|string|max:255',
+            'image_url'      => 'nullable|url|max:1000',
             'schedule'       => 'nullable|array',
             'schedule.*.day' => 'required_with:schedule|string|max:20',
             'schedule.*.time'=> 'required_with:schedule|string|max:20',
@@ -211,7 +217,7 @@ class ClergyManagementController extends AdminBaseController
 
             // Update clergy profile fields
             $profileFields = array_intersect_key($validated, array_flip([
-                'parish_id', 'title', 'specialization', 'schedule',
+                'parish_id', 'title', 'custom_title', 'specialization', 'image_url', 'schedule',
             ]));
 
             if (!empty($profileFields)) {
@@ -219,7 +225,7 @@ class ClergyManagementController extends AdminBaseController
             }
         });
 
-        $user->load(['clergyProfile.parish:id,name,city']);
+        $user->load(['clergyProfile:user_id,parish_id,title,custom_title,specialization,image_url,bio', 'clergyProfile.parish:id,name,city']);
 
         return response()->json($this->formatClergy($user, withSchedule: true));
     }
@@ -295,7 +301,10 @@ class ClergyManagementController extends AdminBaseController
             'street_address' => $user->street_address,
             'zip_code'       => $user->zip_code,
             'title'          => $profile?->title ?? '—',
+            'custom_title'   => $profile?->custom_title ?? '',
             'specialization' => $profile?->specialization ?? '—',
+            'image'          => $profile?->image_url,
+            'bio'            => $profile?->bio ?? '',
             'parish_id'      => $profile?->parish_id,
             'parish_name'    => $profile?->parish?->name ?? '—',
             'parish_city'    => $profile?->parish?->city ?? '—',

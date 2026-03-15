@@ -17,7 +17,7 @@ class RedirectIfAuthenticated
                 $user = Auth::guard($guard)->user();
 
                 return match($user->role) {
-                    'super_admin', 'parish_admin'
+                    'super_admin', 'parish_admin', 'parish_helpdesk'
                         => redirect()->route('admin.dashboard'),
                     'clergymen'
                         => redirect()->route('admin.clergy-dashboard'),

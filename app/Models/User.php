@@ -79,13 +79,14 @@ class User extends Authenticatable
 
     // Role Helpers
 
-    public function isSuperAdmin(): bool  { return $this->role === 'super_admin'; }
-    public function isParishAdmin(): bool { return $this->role === 'parish_admin'; }
-    public function isClergymen(): bool   { return $this->role === 'clergymen'; }
+    public function isSuperAdmin(): bool     { return $this->role === 'super_admin'; }
+    public function isParishAdmin(): bool    { return $this->role === 'parish_admin'; }
+    public function isParishHelpdesk(): bool { return $this->role === 'parish_helpdesk'; }
+    public function isClergymen(): bool      { return $this->role === 'clergymen'; }
 
     public function isAdmin(): bool
     {
-        return in_array($this->role, ['super_admin', 'parish_admin', 'clergymen']);
+        return in_array($this->role, ['super_admin', 'parish_admin', 'parish_helpdesk', 'clergymen']);
     }
 
     // Relationships

@@ -5,7 +5,7 @@
 // Shows a compact preview card for each active stream.
 
 import React, { useState, useEffect, useCallback } from 'react';
-import { FaFacebook, FaVideo, FaArrowRight } from 'react-icons/fa6';
+import { FaFacebook, FaVideo, FaArrowRight, FaTowerBroadcast } from 'react-icons/fa6';
 
 function StreamPreviewCard({ stream }) {
     const isFacebook = stream.type === 'facebook';
@@ -59,12 +59,12 @@ function StreamPreviewCard({ stream }) {
     );
 }
 
-export default function LivestreamWidget() {
+export default function LivestreamWidget({ showOfflineState = false }) {
     const [streams, setStreams] = useState(window.__PAGE_DATA__?.activeStreams ?? []);
 
     const poll = useCallback(async () => {
         try {
-            const res  = await fetch('/api/livestreams/active');
+            const res  = await fetch(`${window.location.origin}/api/livestreams/active`);
             const data = await res.json();
             setStreams(Array.isArray(data) ? data : []);
         } catch (_) {}
@@ -75,8 +75,53 @@ export default function LivestreamWidget() {
         return () => clearInterval(interval);
     }, [poll]);
 
-    // Render nothing when no streams — zero layout impact
-    if (!streams || streams.length === 0) return null;
+    // When no streams and showOfflineState is false — zero layout impact (homepage)
+    if (!streams || streams.length === 0) {
+        if (!showOfflineState) return null;
+
+        // Parish page offline state
+        return (
+            <div style={{
+                display: 'flex', flexDirection: 'column', alignItems: 'center',
+                gap: 12, padding: '40px 20px',
+                borderRadius: '12px',
+                border: '1.5px dashed var(--border-color, #e5e7eb)',
+                background: 'var(--bg-card, #fff)',
+                textAlign: 'center',
+            }}>
+                <div style={{
+                    width: 52, height: 52, borderRadius: 14,
+                    background: 'rgba(26,60,94,0.07)',
+                    display: 'flex', alignItems: 'center', justifyContent: 'center',
+                    color: 'var(--bethel-primary, #1a3c5e)',
+                }}>
+                    <FaTowerBroadcast size={22} aria-hidden="true" />
+                </div>
+                <div>
+                    <p style={{ fontWeight: 700, fontSize: '0.95rem', margin: '0 0 4px',
+                        color: 'var(--text-primary, #111)' }}>
+                        No Live Stream at the Moment
+                    </p>
+                    <p style={{ fontSize: '0.82rem', color: 'var(--text-muted, #6b7280)', margin: 0 }}>
+                        Check back later or visit the livestream page for past broadcasts.
+                    </p>
+                </div>
+                <a href="/livestream" style={{
+                    display: 'inline-flex', alignItems: 'center', gap: 6,
+                    padding: '7px 18px', borderRadius: 999,
+                    border: '1.5px solid var(--bethel-primary, #1a3c5e)',
+                    color: 'var(--bethel-primary, #1a3c5e)',
+                    fontSize: '0.8rem', fontWeight: 600, textDecoration: 'none',
+                    transition: 'background 0.15s, color 0.15s',
+                }}
+                onMouseEnter={e => { e.currentTarget.style.background = 'var(--bethel-primary,#1a3c5e)'; e.currentTarget.style.color = '#fff'; }}
+                onMouseLeave={e => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = 'var(--bethel-primary,#1a3c5e)'; }}
+                >
+                    View Past Broadcasts <FaArrowRight size={10} />
+                </a>
+            </div>
+        );
+    }
 
     return (
         <section className="py-4" aria-label="Live streams">

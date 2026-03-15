@@ -42,7 +42,7 @@ class PublicClergyController extends Controller
     private function buildPageData(Parish $parish, User $user): array
     {
         // Eager-load the profile in one query
-        $user->load('clergyProfile:user_id,title,specialization,bio,image_url');
+        $user->load('clergyProfile:user_id,title,custom_title,specialization,bio,image_url');
 
         // ── Clergy core ──────────────────────────────────────────
         $clergyData = [
@@ -50,6 +50,7 @@ class PublicClergyController extends Controller
             'name'           => $user->full_name,
             'titled_name'    => $user->titled_name,
             'title'          => $user->clergyProfile?->title ?? '',
+            'custom_title'   => $user->clergyProfile?->custom_title ?? '',
             'specialization' => $user->clergyProfile?->specialization ?? '',
             'bio'            => $user->clergyProfile?->bio ?? '',
             'image'          => $user->clergyProfile?->image_url ?? null,

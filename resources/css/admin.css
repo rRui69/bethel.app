@@ -1043,10 +1043,11 @@ body {
     font-weight: 600;
 }
 
-.um-role-badge--super_admin  { background: rgba(200,151,58,0.15);  color: #c8973a; }
-.um-role-badge--parish_admin { background: rgba(59,130,246,0.15);  color: #3b82f6; }
-.um-role-badge--clergymen    { background: rgba(168,85,247,0.15);  color: #a855f7; }
-.um-role-badge--parishioner  { background: rgba(16,185,129,0.15);  color: #10b981; }
+.um-role-badge--super_admin      { background: rgba(200,151,58,0.15);  color: #c8973a; }
+.um-role-badge--parish_admin     { background: rgba(59,130,246,0.15);  color: #3b82f6; }
+.um-role-badge--parish_helpdesk  { background: rgba(14,165,233,0.15);  color: #0284c7; }
+.um-role-badge--clergymen        { background: rgba(168,85,247,0.15);  color: #a855f7; }
+.um-role-badge--parishioner      { background: rgba(16,185,129,0.15);  color: #10b981; }
 
 /* ── Status Badges ─────────────────────────────────────────── */
 .um-status-badge {

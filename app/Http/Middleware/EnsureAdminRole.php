@@ -10,14 +10,14 @@ use Symfony\Component\HttpFoundation\Response;
  * EnsureAdminRole
  *
  * Guards all /admin/* routes.
- * Allows: super_admin, parish_admin, clergymen
+ * Allows: super_admin, parish_admin, parish_helpdesk, clergymen
  * Denies: parishioner, unauthenticated
  *
  * Registered as alias 'admin' in bootstrap/app.php
  */
 class EnsureAdminRole
 {
-    const ADMIN_ROLES = ['super_admin', 'parish_admin', 'clergymen'];
+    const ADMIN_ROLES = ['super_admin', 'parish_admin', 'parish_helpdesk', 'clergymen'];
 
     public function handle(Request $request, Closure $next): Response
     {
