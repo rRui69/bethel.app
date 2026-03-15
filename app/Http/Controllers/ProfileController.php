@@ -83,9 +83,19 @@ class ProfileController extends Controller
         $user->fill($validated)->save();
 
         return response()->json([
-            'message'    => 'Personal information updated successfully.',
-            'first_name' => $user->first_name,
-            'last_name'  => $user->last_name,
+            'message'        => 'Personal information updated successfully.',
+            'first_name'     => $user->first_name,
+            'middle_name'    => $user->middle_name,
+            'last_name'      => $user->last_name,
+            'phone'          => $user->phone,
+            'gender'         => $user->gender,
+            'birth_date'     => $user->birth_date?->format('Y-m-d'),
+            'country'        => $user->country,
+            'province'       => $user->province,
+            'city'           => $user->city,
+            'barangay'       => $user->barangay,
+            'street_address' => $user->street_address,
+            'zip_code'       => $user->zip_code,
         ]);
     }
 
@@ -118,6 +128,7 @@ class ProfileController extends Controller
             'message'  => 'Account details updated successfully.',
             'username' => $user->username,
             'email'    => $user->email,
+            'email_verified' => ! is_null($user->email_verified_at),
         ]);
     }
 
