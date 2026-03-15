@@ -14,13 +14,14 @@ class SacramentType extends Model
     protected $fillable = [
         'name', 'slug', 'description',
         'icon', 'icon_color', 'icon_bg',
-        'is_active', 'sort_order', 'form_schema', 'created_by',
+        'is_active', 'sort_order', 'min_price', 'form_schema', 'created_by',
     ];
 
     protected $casts = [
         'form_schema' => 'array',
         'is_active'   => 'boolean',
         'sort_order'  => 'integer',
+        'min_price'   => 'integer',
     ];
 
     // Auto-generate
