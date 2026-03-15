@@ -25,6 +25,23 @@ use App\Http\Controllers\PublicParishController;
 use App\Http\Controllers\PublicClergyController;
 
 Route::get('/', [HomeController::class, 'index'])->name('home');
+// SMTP Test Route (remove after testing)
+Route::get('/test-smtp', function () {
+    try {
+        $transport = new \Symfony\Component\Mailer\Transport\Smtp\EsmtpTransport(
+            env('MAIL_HOST'),
+            env('MAIL_PORT'),
+            env('MAIL_ENCRYPTION') === 'tls'
+        );
+        $transport->setUsername(env('MAIL_USERNAME'));
+        $transport->setPassword(env('MAIL_PASSWORD'));
+
+        $transport->start();
+        return response()->json(['status' => 'success', 'message' => 'SMTP connected successfully!']);
+    } catch (\Exception $e) {
+        return response()->json(['status' => 'error', 'message' => $e->getMessage()], 500);
+    }
+});
 
 // ── Public parish pages ───────────────────────────────────────────────────────
 Route::get('/parish/{parish}',       [PublicParishController::class, 'show'])->name('parish.show');
