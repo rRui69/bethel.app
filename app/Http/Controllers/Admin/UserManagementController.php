@@ -24,7 +24,7 @@ class UserManagementController extends AdminBaseController
     {
         $query = User::select([
             'id', 'username', 'email', 'role', 'account_status',
-            'first_name', 'last_name', 'phone', 'city', 'created_at',
+            'first_name', 'last_name', 'phone', 'city', 'created_at', 'avatar_url',
         ]);
 
         if ($request->filled('role') && $request->role !== 'all') {
@@ -102,6 +102,7 @@ class UserManagementController extends AdminBaseController
             'street_address' => $user->street_address,
             'zip_code'       => $user->zip_code,
             'joined'         => $user->created_at->format('F d, Y'),
+            'avatar_url'     => $user->avatar_url,
         ]);
     }
 
@@ -249,6 +250,7 @@ class UserManagementController extends AdminBaseController
             'phone'          => $u->phone,
             'city'           => $u->city,
             'joined'         => $u->created_at->format('M d, Y'),
+            'avatar_url'     => $u->avatar_url,
         ];
     }
 

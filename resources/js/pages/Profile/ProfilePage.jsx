@@ -1,9 +1,12 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
+import axios from 'axios';
 import {
     FaUser, FaShield, FaKey, FaLock, FaChurch,
     FaCheck, FaTriangleExclamation, FaCircleCheck,
     FaPhone, FaLocationDot, FaCalendar, FaEnvelope,
+    FaCamera, FaSpinner,
 } from 'react-icons/fa6';
+import { useCloudinaryUpload } from '@/hooks/useCloudinaryUpload';
 
 // ─────────────────────────────────────────────
 // Helpers
@@ -39,11 +42,114 @@ function Toast({ type, msg, onClose }) {
 // Tab: Personal Info
 // ─────────────────────────────────────────────
 
+// ─────────────────────────────────────────────
+// Save Success Modal
+// ─────────────────────────────────────────────
+
+const FIELD_LABELS = {
+    first_name:     'First Name',
+    middle_name:    'Middle Name',
+    last_name:      'Last Name',
+    phone:          'Phone',
+    gender:         'Gender',
+    birth_date:     'Date of Birth',
+    country:        'Country',
+    province:       'Province',
+    city:           'City',
+    barangay:       'Barangay',
+    street_address: 'Street Address',
+    zip_code:       'ZIP Code',
+    username:       'Username',
+    email:          'Email',
+};
+
+function SaveSuccessModal({ changes, onClose }) {
+    const timerRef = React.useRef(null);
+    const [progress, setProgress] = React.useState(100);
+
+    React.useEffect(() => {
+        const start = Date.now();
+        const duration = 3000;
+
+        // Shrink progress bar over 3 seconds
+        const tick = setInterval(() => {
+            const elapsed = Date.now() - start;
+            const pct = Math.max(0, 100 - (elapsed / duration) * 100);
+            setProgress(pct);
+            if (elapsed >= duration) { clearInterval(tick); onClose(); }
+        }, 30);
+
+        return () => clearInterval(tick);
+    }, []);
+
+    return (
+        <div
+            onClick={onClose}
+            style={{
+                position: 'fixed', inset: 0, zIndex: 1070,
+                background: 'rgba(0,0,0,0.45)',
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                padding: '1rem',
+                animation: 'fadeIn 0.15s ease',
+            }}
+        >
+            <div
+                onClick={e => e.stopPropagation()}
+                style={{
+                    background: 'var(--bg-card, #fff)',
+                    borderRadius: 18,
+                    padding: '2.5rem 2rem 1.5rem',
+                    maxWidth: 420, width: '100%',
+                    textAlign: 'center',
+                    boxShadow: '0 20px 60px rgba(0,0,0,0.2)',
+                    position: 'relative',
+                    overflow: 'hidden',
+                }}
+            >
+                {/* Big checkmark */}
+                <div style={{
+                    width: 72, height: 72, borderRadius: '50%',
+                    background: 'rgba(22,163,74,0.1)',
+                    display: 'flex', alignItems: 'center', justifyContent: 'center',
+                    margin: '0 auto 16px',
+                }}>
+                    <FaCircleCheck size={36} style={{ color: '#16a34a' }} />
+                </div>
+
+                <h4 style={{ fontWeight: 800, fontSize: '1.15rem',
+                              color: 'var(--bethel-primary)', marginBottom: 6 }}>
+                    Changes Saved!
+                </h4>
+                <p style={{ fontSize: '0.82rem', color: 'var(--text-muted)', marginBottom: 20 }}>
+                    Your profile has been updated successfully.
+                </p>
+
+
+
+                <p style={{ fontSize: '0.72rem', color: 'var(--text-muted)', marginBottom: 16 }}>
+                    Click anywhere to dismiss
+                </p>
+
+                {/* Progress bar */}
+                <div style={{
+                    position: 'absolute', bottom: 0, left: 0,
+                    height: 4, width: `${progress}%`,
+                    background: '#16a34a',
+                    transition: 'width 0.03s linear',
+                    borderRadius: '0 0 0 18px',
+                }} />
+            </div>
+
+            <style>{`@keyframes fadeIn { from { opacity:0 } to { opacity:1 } }`}</style>
+        </div>
+    );
+}
+
 function PersonalTab({ user, onSaved }) {
-    const [form, setForm]     = useState({});
-    const [errors, setErrors] = useState({});
-    const [status, setStatus] = useState(null); // {type, msg}
-    const [saving, setSaving] = useState(false);
+    const [form, setForm]       = useState({});
+    const [errors, setErrors]   = useState({});
+    const [saving, setSaving]   = useState(false);
+    const [changes, setChanges] = useState(null); // null = modal hidden
 
     useEffect(() => {
         if (!user) return;
@@ -66,7 +172,6 @@ function PersonalTab({ user, onSaved }) {
     const set = (name, value) => {
         setForm(p => ({ ...p, [name]: value }));
         setErrors(p => ({ ...p, [name]: null }));
-        setStatus(null);
     };
 
     const handlePhone = (e) => {
@@ -76,17 +181,19 @@ function PersonalTab({ user, onSaved }) {
     };
 
     const save = async () => {
-        setSaving(true); setErrors({}); setStatus(null);
+        setSaving(true); setErrors({});
+        // Snapshot before values for diff
+        const before = { ...form };
         try {
-            const res = await axios.patch('/api/profile', form);
-            setStatus({ type: 'success', msg: res.data.message });
+            const res = await axios.patch('/api/profile/personal', form);
+            // Compute what actually changed
+            const diff = Object.keys(FIELD_LABELS)
+                .filter(k => before[k] !== undefined && before[k] !== res.data[k] && res.data[k] !== undefined)
+                .map(k => ({ label: FIELD_LABELS[k], from: before[k] || '', to: res.data[k] || '' }));
+            setChanges(diff);
             if (onSaved) onSaved(res.data);
         } catch (err) {
-            if (err.response?.status === 422) {
-                setErrors(err.response.data.errors || {});
-            } else {
-                setStatus({ type: 'error', msg: err.response?.data?.message || 'Update failed.' });
-            }
+            if (err.response?.status === 422) setErrors(err.response.data.errors || {});
         } finally {
             setSaving(false);
         }
@@ -94,7 +201,9 @@ function PersonalTab({ user, onSaved }) {
 
     return (
         <div className="p-4">
-            <Toast type={status?.type} msg={status?.msg} onClose={() => setStatus(null)} />
+            {changes !== null && (
+                <SaveSuccessModal changes={changes} onClose={() => setChanges(null)} />
+            )}
 
             {/* Name */}
             <p className="text-muted fw-semibold mb-3" style={{ fontSize: '0.7rem', textTransform: 'uppercase', letterSpacing: '0.06em' }}>
@@ -203,10 +312,10 @@ function PersonalTab({ user, onSaved }) {
 // ─────────────────────────────────────────────
 
 function AccountTab({ user, onSaved }) {
-    const [form, setForm]     = useState({ username: '', email: '' });
-    const [errors, setErrors] = useState({});
-    const [status, setStatus] = useState(null);
-    const [saving, setSaving] = useState(false);
+    const [form, setForm]       = useState({ username: '', email: '' });
+    const [errors, setErrors]   = useState({});
+    const [saving, setSaving]   = useState(false);
+    const [changes, setChanges] = useState(null);
 
     const emailVerified = user?.email_verified;
 
@@ -218,21 +327,23 @@ function AccountTab({ user, onSaved }) {
     const set = (name, value) => {
         setForm(p => ({ ...p, [name]: value }));
         setErrors(p => ({ ...p, [name]: null }));
-        setStatus(null);
     };
 
     const save = async () => {
-        setSaving(true); setErrors({}); setStatus(null);
+        setSaving(true); setErrors({});
+        const before = { username: user.username, email: user.email };
         const payload = { username: form.username };
         if (!emailVerified) payload.email = form.email;
 
         try {
-            const res = await axios.patch('/api/profile', payload);
-            setStatus({ type: 'success', msg: res.data.message });
+            const res = await axios.patch('/api/profile/account', payload);
+            const diff = Object.keys(payload)
+                .filter(k => before[k] !== res.data[k] && res.data[k] !== undefined)
+                .map(k => ({ label: FIELD_LABELS[k], from: before[k] || '', to: res.data[k] || '' }));
+            setChanges(diff);
             if (onSaved) onSaved(res.data);
         } catch (err) {
             if (err.response?.status === 422) setErrors(err.response.data.errors || {});
-            else setStatus({ type: 'error', msg: err.response?.data?.message || 'Update failed.' });
         } finally {
             setSaving(false);
         }
@@ -240,7 +351,9 @@ function AccountTab({ user, onSaved }) {
 
     return (
         <div className="p-4">
-            <Toast type={status?.type} msg={status?.msg} onClose={() => setStatus(null)} />
+            {changes !== null && (
+                <SaveSuccessModal changes={changes} onClose={() => setChanges(null)} />
+            )}
 
             {/* Read-only role / status */}
             <p className="text-muted fw-semibold mb-3" style={{ fontSize: '0.7rem', textTransform: 'uppercase', letterSpacing: '0.06em' }}>
@@ -418,6 +531,201 @@ const TABS = [
     { id: 'password', label: 'Change Password', Icon: FaKey    },
 ];
 
+// ── Avatar Upload with preview modal ─────────────────────────
+function AvatarUpload({ currentAvatar, initials, onUploaded }) {
+    const { upload, uploading } = useCloudinaryUpload();
+    const [preview,   setPreview]   = useState(currentAvatar ?? null);
+    const [pendingFile, setPending] = useState(null);   // file not yet confirmed
+    const [pendingUrl,  setPendingUrl] = useState(null); // object URL for preview
+    const [showModal,   setShowModal] = useState(false);
+    const [saving,      setSaving]   = useState(false);
+    const [msg,         setMsg]      = useState(null);
+    const inputRef = useRef();
+
+    useEffect(() => { setPreview(currentAvatar ?? null); }, [currentAvatar]);
+
+    // When user picks a file — show modal preview, don't upload yet
+    function handleFile(e) {
+        const file = e.target.files?.[0];
+        if (!file) return;
+        const objectUrl = URL.createObjectURL(file);
+        setPending(file);
+        setPendingUrl(objectUrl);
+        setShowModal(true);
+        e.target.value = '';
+    }
+
+    // User confirmed in modal — now upload to Cloudinary + save
+    async function handleConfirm() {
+        if (!pendingFile) return;
+        setSaving(true);
+        setMsg(null);
+        try {
+            const url = await upload(pendingFile, 'bethel_app/avatars');
+            await window.axios.patch('/api/profile/avatar', { avatar_url: url });
+            setPreview(url);
+            onUploaded(url);
+            setMsg({ ok: true, text: 'Photo updated!' });
+        } catch {
+            setMsg({ ok: false, text: 'Upload failed. Try again.' });
+        } finally {
+            setSaving(false);
+            handleClose();
+        }
+    }
+
+    function handleClose() {
+        if (pendingUrl) URL.revokeObjectURL(pendingUrl);
+        setPending(null);
+        setPendingUrl(null);
+        setShowModal(false);
+    }
+
+    const AVATAR_SIZE = 110;
+
+    return (
+        <>
+            {/* Avatar circle */}
+            <div style={{ position: 'relative', width: AVATAR_SIZE, height: AVATAR_SIZE, margin: '0 auto 14px' }}>
+                <div
+                    onClick={() => inputRef.current?.click()}
+                    title="Change profile photo"
+                    style={{
+                        width: AVATAR_SIZE, height: AVATAR_SIZE, borderRadius: '50%',
+                        background: preview ? 'transparent' : 'var(--bethel-secondary)',
+                        color: 'var(--bethel-primary)',
+                        display: 'grid', placeItems: 'center',
+                        fontSize: '2.2rem', fontWeight: 800,
+                        border: '4px solid #fff',
+                        boxShadow: '0 4px 20px rgba(0,0,0,0.18)',
+                        overflow: 'hidden',
+                        cursor: 'pointer',
+                        transition: 'opacity 0.15s',
+                    }}
+                >
+                    {preview
+                        ? <img src={preview} alt="Avatar"
+                               style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                        : (uploading
+                            ? <FaSpinner size={28} style={{ animation: 'spin 1s linear infinite' }} />
+                            : initials)
+                    }
+                </div>
+
+                {/* Camera badge */}
+                <button
+                    type="button"
+                    onClick={() => inputRef.current?.click()}
+                    disabled={uploading || saving}
+                    title="Upload photo"
+                    style={{
+                        position: 'absolute', bottom: 4, right: 4,
+                        width: 28, height: 28, borderRadius: '50%',
+                        background: 'var(--bethel-primary)', color: '#fff',
+                        border: '2.5px solid #fff',
+                        display: 'flex', alignItems: 'center', justifyContent: 'center',
+                        cursor: 'pointer', padding: 0,
+                        boxShadow: '0 2px 6px rgba(0,0,0,0.25)',
+                    }}
+                >
+                    {saving
+                        ? <FaSpinner size={11} style={{ animation: 'spin 1s linear infinite' }} />
+                        : <FaCamera size={11} />}
+                </button>
+
+                <input ref={inputRef} type="file" accept="image/*"
+                       style={{ display: 'none' }} onChange={handleFile} />
+            </div>
+
+            {/* Feedback */}
+            {msg && (
+                <p style={{ fontSize: '0.75rem', fontWeight: 600, marginBottom: 8,
+                    color: msg.ok ? '#16a34a' : '#ef4444' }}>
+                    {msg.text}
+                </p>
+            )}
+
+            {/* ── Confirmation modal ────────────────────────── */}
+            {showModal && (
+                <div
+                    style={{
+                        position: 'fixed', inset: 0, zIndex: 1060,
+                        background: 'rgba(0,0,0,0.55)',
+                        display: 'flex', alignItems: 'center', justifyContent: 'center',
+                        padding: '1rem',
+                    }}
+                    onClick={handleClose}
+                >
+                    <div
+                        onClick={e => e.stopPropagation()}
+                        style={{
+                            background: 'var(--bg-card, #fff)',
+                            borderRadius: 16, padding: '2rem',
+                            maxWidth: 360, width: '100%',
+                            textAlign: 'center',
+                            boxShadow: '0 20px 60px rgba(0,0,0,0.3)',
+                        }}
+                    >
+                        <h5 style={{ fontWeight: 800, color: 'var(--bethel-primary)',
+                                     marginBottom: 6, fontSize: '1rem' }}>
+                            Set Profile Photo?
+                        </h5>
+                        <p style={{ fontSize: '0.82rem', color: 'var(--text-muted)', marginBottom: '1.25rem' }}>
+                            This will be your new profile picture.
+                        </p>
+
+                        {/* Preview */}
+                        <div style={{
+                            width: 120, height: 120, borderRadius: '50%',
+                            overflow: 'hidden', margin: '0 auto 1.5rem',
+                            border: '4px solid var(--bethel-secondary)',
+                            boxShadow: '0 4px 20px rgba(0,0,0,0.15)',
+                        }}>
+                            <img src={pendingUrl} alt="Preview"
+                                 style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                        </div>
+
+                        {/* Buttons */}
+                        <div style={{ display: 'flex', gap: 10, justifyContent: 'center' }}>
+                            <button
+                                onClick={handleClose}
+                                disabled={saving}
+                                style={{
+                                    flex: 1, padding: '9px 0', borderRadius: 9,
+                                    border: '1.5px solid var(--border-color, #d1d5db)',
+                                    background: 'transparent',
+                                    color: 'var(--text-primary)', fontWeight: 600,
+                                    fontSize: '0.875rem', cursor: 'pointer',
+                                }}
+                            >
+                                Cancel
+                            </button>
+                            <button
+                                onClick={handleConfirm}
+                                disabled={saving}
+                                style={{
+                                    flex: 1, padding: '9px 0', borderRadius: 9,
+                                    border: 'none',
+                                    background: 'var(--bethel-primary)', color: '#fff',
+                                    fontWeight: 700, fontSize: '0.875rem',
+                                    cursor: saving ? 'not-allowed' : 'pointer',
+                                    opacity: saving ? 0.7 : 1,
+                                    display: 'flex', alignItems: 'center',
+                                    justifyContent: 'center', gap: 6,
+                                }}
+                            >
+                                {saving
+                                    ? <><FaSpinner size={12} style={{ animation: 'spin 1s linear infinite' }} /> Saving…</>
+                                    : 'Save Photo'}
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
+        </>
+    );
+}
+
 export default function ProfilePage() {
     const [tab,     setTab]     = useState('personal');
     const [user,    setUser]    = useState(null);
@@ -463,53 +771,50 @@ export default function ProfilePage() {
                 ) : error ? (
                     <div className="alert alert-danger">{error}</div>
                 ) : (
-                    <div className="row g-4 align-items-start">
+                    <div className="row g-4 justify-content-center">
 
-                        {/* ── Left: Identity card ────────────────── */}
-                        <div className="col-lg-3">
-                            <div className="card shadow-sm border-0" style={{ borderRadius: '14px', overflow: 'hidden' }}>
-                                {/* Header strip */}
-                                <div style={{ height: '70px', background: 'linear-gradient(135deg, var(--bethel-hero-start), var(--bethel-hero-end))' }} />
-
-                                <div className="card-body text-center" style={{ paddingTop: '0.5rem' }}>
-                                    {/* Avatar */}
-                                    <div style={{
-                                        width: '72px', height: '72px',
-                                        borderRadius: '50%',
-                                        background: 'var(--bethel-secondary)',
-                                        color: 'var(--bethel-primary)',
-                                        display: 'grid', placeItems: 'center',
-                                        fontSize: '1.5rem', fontWeight: 800,
-                                        margin: '-46px auto 12px',
-                                        border: '4px solid #fff',
-                                        boxShadow: '0 4px 12px rgba(0,0,0,0.15)',
-                                    }}>
-                                        {initials}
+                        {/* ── Identity card ──────────────────────── */}
+                        <div className="col-12 col-md-8 col-lg-5">
+                            <div className="card shadow-sm border-0 text-center"
+                                 style={{ borderRadius: 18, overflow: 'hidden' }}>
+                                {/* Banner */}
+                                <div style={{
+                                    height: 90,
+                                    background: 'linear-gradient(135deg, var(--bethel-hero-start), var(--bethel-hero-end))',
+                                }} />
+                                <div className="card-body" style={{ paddingBottom: '1.75rem' }}>
+                                    {/* Avatar — overlaps the banner */}
+                                    <div style={{ marginTop: -72, marginBottom: 10 }}>
+                                        <AvatarUpload
+                                            currentAvatar={user?.avatar_url}
+                                            initials={initials}
+                                            onUploaded={(url) => setUser(prev => ({ ...prev, avatar_url: url }))}
+                                        />
                                     </div>
-
-                                    <h5 className="fw-bold mb-0" style={{ color: 'var(--bethel-primary)', fontSize: '1rem' }}>
+                                    <h4 style={{ fontWeight: 800, color: 'var(--bethel-primary)', fontSize: '1.25rem', marginBottom: 3 }}>
                                         {user?.first_name} {user?.last_name}
-                                    </h5>
-                                    <p className="text-muted mb-2" style={{ fontSize: '0.8rem' }}>@{user?.username}</p>
-
-                                    <span className={`badge bg-${ROLE_BADGE[user?.role] ?? 'secondary'} mb-2`}
-                                        style={{ fontSize: '0.72rem' }}>
+                                    </h4>
+                                    <p style={{ color: 'var(--text-muted)', fontSize: '0.85rem', marginBottom: 10 }}>
+                                        @{user?.username}
+                                    </p>
+                                    <span className={`badge bg-${ROLE_BADGE[user?.role] ?? 'secondary'} mb-3`}
+                                          style={{ fontSize: '0.75rem', padding: '5px 14px', borderRadius: 999 }}>
                                         {user?.role_label}
                                     </span>
-
-                                    <hr className="my-3" />
-
-                                    {/* Info list */}
-                                    <div className="text-start" style={{ fontSize: '0.8rem' }}>
+                                    <hr style={{ margin: '0.75rem 0 1.1rem' }} />
+                                    <div style={{ fontSize: '0.83rem', textAlign: 'left' }}>
                                         {[
                                             { Icon: FaEnvelope,    val: user?.email },
                                             { Icon: FaPhone,       val: user?.phone || '—' },
                                             { Icon: FaLocationDot, val: user?.city  || '—' },
                                             { Icon: FaCalendar,    val: `Joined ${user?.joined}` },
+                                            ...(user?.parish_name ? [{ Icon: FaChurch, val: user.parish_name }] : []),
                                         ].map(({ Icon, val }, i) => (
-                                            <div key={i} className="d-flex align-items-start gap-2 mb-2">
-                                                <Icon size={12} style={{ color: 'var(--bethel-secondary)', marginTop: '3px', flexShrink: 0 }} />
-                                                <span className="text-muted text-break">{val}</span>
+                                            <div key={i} style={{ display: 'flex', alignItems: 'flex-start', gap: 10, marginBottom: 10 }}>
+                                                <div style={{ width: 28, height: 28, borderRadius: 8, background: 'rgba(26,60,94,0.07)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                                                    <Icon size={12} style={{ color: 'var(--bethel-secondary)' }} />
+                                                </div>
+                                                <span style={{ color: 'var(--text-muted)', wordBreak: 'break-word', paddingTop: 5 }}>{val}</span>
                                             </div>
                                         ))}
                                     </div>
@@ -517,8 +822,8 @@ export default function ProfilePage() {
                             </div>
                         </div>
 
-                        {/* ── Right: Edit tabs ───────────────────── */}
-                        <div className="col-lg-9">
+                        {/* ── Edit tabs ──────────────────────────── */}
+                        <div className="col-12 col-lg-7">
                             <div className="card shadow-sm border-0" style={{ borderRadius: '14px' }}>
 
                                 {/* Tab bar */}

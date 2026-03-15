@@ -993,6 +993,16 @@ body {
     font-weight: 700;
     color: #fff;
     flex-shrink: 0;
+    overflow: hidden;       /* clips photo to circle */
+    position: relative;
+}
+
+.um-avatar img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    object-position: top center;
+    display: block;
 }
 
 .um-avatar--lg {
@@ -1002,9 +1012,9 @@ body {
 }
 
 .um-avatar--xl {
-    width: 56px;
-    height: 56px;
-    font-size: 1.2rem;
+    width: 64px;
+    height: 64px;
+    font-size: 1.4rem;
 }
 
 .um-full-name {
@@ -1815,3 +1825,11 @@ body {
 .admin-table tbody tr.sr-row--pending:hover  td { background: rgba(245, 159, 11, 0.35);  }
 .admin-table tbody tr.sr-row--approved:hover td { background: rgba(16, 185, 129, 0.35); }
 .admin-table tbody tr.sr-row--rejected:hover td { background: rgba(239, 68, 68, 0.35);  }
+/* Clickable table row — User Management */
+.um-table-row-clickable:hover td {
+    background: rgba(26, 60, 94, 0.04);
+}
+
+[data-theme="dark"] .um-table-row-clickable:hover td {
+    background: rgba(255, 255, 255, 0.04);
+}

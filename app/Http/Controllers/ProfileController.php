@@ -10,17 +10,11 @@ use Illuminate\View\View;
 
 class ProfileController extends Controller
 {
-    /**
-     * Serve the profile page — public layout (layouts.app) for ALL roles.
-     */
     public function page(Request $request): View
     {
         return view('profile.page');
     }
 
-    /**
-     * Return the authenticated user's full profile as JSON.
-     */
     public function show(Request $request): JsonResponse
     {
         $user = $request->user()->load('parish:id,name,city');
@@ -42,7 +36,7 @@ class ProfileController extends Controller
             'barangay'       => $user->barangay        ?? '',
             'street_address' => $user->street_address  ?? '',
             'zip_code'       => $user->zip_code        ?? '',
-            // Role — read-only, never changeable from this page
+            'avatar_url'     => $user->avatar_url      ?? null,
             'role'           => $user->role,
             'role_label'     => match ($user->role) {
                 'super_admin'     => 'Diocesan Head IT Admin',
@@ -56,7 +50,7 @@ class ProfileController extends Controller
                 'parish_admin'    => 'warning',
                 'parish_helpdesk' => 'info',
                 'clergymen'       => 'info',
-                default        => 'secondary',
+                default           => 'secondary',
             },
             'account_status' => $user->account_status ?? 'Active',
             'parish_name'    => $user->parish?->name  ?? null,
@@ -65,18 +59,16 @@ class ProfileController extends Controller
     }
 
     /**
-     * Update the authenticated user's profile.
-     * Role and account_status are intentionally never updated here.
+     * Update personal info fields only.
      */
-    public function update(Request $request): JsonResponse
+    public function updatePersonal(Request $request): JsonResponse
     {
         $user = $request->user();
 
-        $rules = [
+        $validated = $request->validate([
             'first_name'     => 'required|string|max:100',
             'middle_name'    => 'nullable|string|max:100',
             'last_name'      => 'required|string|max:100',
-            'username'       => 'required|string|max:50|unique:users,username,' . $user->id,
             'phone'          => 'required|string|max:20',
             'gender'         => 'required|in:Male,Female,Prefer not to say',
             'birth_date'     => 'required|date',
@@ -86,19 +78,36 @@ class ProfileController extends Controller
             'barangay'       => 'required|string|max:100',
             'street_address' => 'nullable|string|max:255',
             'zip_code'       => 'nullable|string|max:10',
+        ]);
+
+        $user->fill($validated)->save();
+
+        return response()->json([
+            'message'    => 'Personal information updated successfully.',
+            'first_name' => $user->first_name,
+            'last_name'  => $user->last_name,
+        ]);
+    }
+
+    /**
+     * Update account fields only (username, email).
+     */
+    public function updateAccount(Request $request): JsonResponse
+    {
+        $user = $request->user();
+
+        $rules = [
+            'username' => 'required|string|max:50|unique:users,username,' . $user->id,
         ];
 
-        // Email: only updatable when NOT verified
+        // Email only updatable when not verified
         if (is_null($user->email_verified_at)) {
             $rules['email'] = 'required|email|max:255|unique:users,email,' . $user->id;
         }
 
         $validated = $request->validate($rules);
 
-        // Hard-block: role and account_status cannot be updated from this endpoint
-        unset($validated['role'], $validated['account_status']);
-
-        // If verified, strip email even if someone sends it
+        // Strip email if verified even if submitted
         if (! is_null($user->email_verified_at)) {
             unset($validated['email']);
         }
@@ -106,16 +115,31 @@ class ProfileController extends Controller
         $user->fill($validated)->save();
 
         return response()->json([
-            'message'    => 'Profile updated successfully.',
-            'first_name' => $user->first_name,
-            'last_name'  => $user->last_name,
-            'username'   => $user->username,
+            'message'  => 'Account details updated successfully.',
+            'username' => $user->username,
+            'email'    => $user->email,
         ]);
     }
 
     /**
-     * Change the authenticated user's password.
+     * Update only the avatar — separate endpoint so we don't
+     * need all required profile fields just to change a photo.
      */
+    public function updateAvatar(Request $request): JsonResponse
+    {
+        $request->validate([
+            'avatar_url' => 'required|url|max:1000',
+        ]);
+
+        $user = $request->user();
+        $user->update(['avatar_url' => $request->avatar_url]);
+
+        return response()->json([
+            'message'    => 'Profile photo updated.',
+            'avatar_url' => $user->avatar_url,
+        ]);
+    }
+
     public function changePassword(Request $request): JsonResponse
     {
         $request->validate([

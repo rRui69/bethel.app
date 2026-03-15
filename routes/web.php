@@ -85,9 +85,11 @@ Route::middleware(['auth', 'verified'])->group(function () {
     // Profile pages
     Route::get('/profile',     [\App\Http\Controllers\ProfileController::class, 'page'])->name('profile');
     Route::prefix('api/profile')->name('api.profile.')->group(function () {
-        Route::get('/',          [\App\Http\Controllers\ProfileController::class, 'show'])->name('show');
-        Route::patch('/',        [\App\Http\Controllers\ProfileController::class, 'update'])->name('update');
-        Route::post('/password', [\App\Http\Controllers\ProfileController::class, 'changePassword'])->name('password');
+        Route::get('/',                [\App\Http\Controllers\ProfileController::class, 'show'])->name('show');
+        Route::patch('/personal',      [\App\Http\Controllers\ProfileController::class, 'updatePersonal'])->name('personal');
+        Route::patch('/account',       [\App\Http\Controllers\ProfileController::class, 'updateAccount'])->name('account');
+        Route::patch('/avatar',        [\App\Http\Controllers\ProfileController::class, 'updateAvatar'])->name('avatar');
+        Route::post('/password',       [\App\Http\Controllers\ProfileController::class, 'changePassword'])->name('password');
     });
 
     // My Bookings — page + API

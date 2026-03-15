@@ -21,6 +21,7 @@ class User extends Authenticatable
         'phone', 'country', 'province', 'city', 'barangay',
         'street_address', 'zip_code',
         'otp_code', 'otp_expires_at', 'email_verified_at',
+        'avatar_url',
     ];
 
     protected $hidden = ['password', 'remember_token'];

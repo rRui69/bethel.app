@@ -2052,3 +2052,6 @@ z-index:1;
 [data-theme="dark"] .clergy-profile__back-btn:hover {
     color: #bfdbfe;
 }
+
+/* Spin animation for loading spinners */
+@keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }

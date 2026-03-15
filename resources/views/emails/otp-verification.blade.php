@@ -31,7 +31,7 @@
         {{-- Header --}}
         <div class="header">
             <div class="logo">Bethel<span>App</span></div>
-            <div class="subtitle">House of God — Digital Parish Portal</div>
+            <div class="subtitle">BethelApp - Digital Parish Management WebApp</div>
         </div>
 
         {{-- Body --}}
@@ -47,13 +47,12 @@
             <div class="otp-wrap">
                 <div class="otp-label">Your Verification Code</div>
                 <div class="otp-code">{{ $otpCode }}</div>
-                <div class="verse-label">✝ Your code is inspired by a Bible verse reference</div>
             </div>
 
-            <p class="expiry">⏱ This code expires in 15 minutes.</p>
+            <p class="expiry">This code expires in 15 minutes.</p>
 
             <div class="tip">
-                <strong>Tip:</strong> Enter this code exactly as shown — uppercase letters and numbers only, no spaces or special characters.
+                <strong>Tip:</strong> Enter this code exactly as shown, uppercase letters and numbers only, no spaces or special characters.
             </div>
 
             <div class="divider"></div>
@@ -67,7 +66,7 @@
         {{-- Footer --}}
         <div class="footer">
             <p class="footer-text">
-                © {{ date('Y') }} BethelApp — Diocesan Catholic Parish Portal<br>
+                {{ date('Y') }} BethelApp — Diocesan Catholic Parish Portal<br>
                 This is an automated message. Please do not reply to this email.
             </p>
         </div>

@@ -204,7 +204,7 @@ const EDIT_TABS = [
     { id: 'profile',  label: 'Profile Info',   icon: FaUser   },
     { id: 'account',  label: 'Account & Role', icon: FaShield },
     { id: 'password', label: 'Reset Password', icon: FaKey    },
-    { id: 'danger',   label: 'Danger Zone',    icon: FaSkull  },
+    { id: 'danger',   label: 'Delete User',    icon: FaSkull  },
 ];
 
 function EditUserModal({ userId, onClose, onUpdated, onDeleted }) {
@@ -391,7 +391,7 @@ function EditUserModal({ userId, onClose, onUpdated, onDeleted }) {
                                             // Remove non-numeric characters
                                             let digitsOnly = e.target.value.replace(/\D/g, '');
                                             if (digitsOnly.length > 10) digitsOnly = digitsOnly.slice(0, 10);
-                                            
+
                                             setProfile(prev => ({ ...prev, phone: digitsOnly }));
                                           }
 
@@ -615,7 +615,9 @@ function UserDetailModal({ userId, onClose, onEdit }) {
                         <>
                             <div className="um-detail-header">
                                 <div className="um-avatar um-avatar--xl">
-                                    {((user.first_name?.[0] || '') + (user.last_name?.[0] || '')).toUpperCase()}
+                                    {user.avatar_url
+                                        ? <img src={user.avatar_url} alt={user.full_name} />
+                                        : ((user.first_name?.[0] || '') + (user.last_name?.[0] || '')).toUpperCase()}
                                 </div>
                                 <div>
                                     <div className="um-detail-header__name">{user.full_name}</div>
@@ -881,49 +883,44 @@ export default function UserManagement() {
                             <tr>
                                 <th>#</th>
                                 <th>Name</th>
-                                <th>Username</th>
-                                <th>Email</th>
                                 <th>Role</th>
                                 <th>Status</th>
-                                <th>City</th>
                                 <th>Joined</th>
-                                <th></th>
                             </tr>
                         </thead>
                         <tbody>
                             {loading ? (
                                 <tr>
-                                    <td colSpan={9} className="um-table-empty">Loading…</td>
+                                    <td colSpan={5} className="um-table-empty">Loading…</td>
                                 </tr>
                             ) : users.length === 0 ? (
                                 <tr>
-                                    <td colSpan={9} className="um-table-empty">No users found matching your filters.</td>
+                                    <td colSpan={5} className="um-table-empty">No users found matching your filters.</td>
                                 </tr>
                             ) : users.map((user, i) => (
-                                <tr key={user.id}>
+                                <tr
+                                    key={user.id}
+                                    onClick={() => setDetailUserId(user.id)}
+                                    style={{ cursor: 'pointer' }}
+                                    className="um-table-row-clickable"
+                                >
                                     <td className="um-table-num">{((page - 1) * 15) + i + 1}</td>
                                     <td>
                                         <div className="um-table-name">
                                             <div className="um-avatar">
-                                                {user.full_name?.split(' ').map(n => n[0]).join('').slice(0, 2).toUpperCase()}
+                                                {user.avatar_url
+                                                    ? <img src={user.avatar_url} alt={user.full_name} />
+                                                    : user.full_name?.split(' ').map(n => n[0]).join('').slice(0, 2).toUpperCase()}
                                             </div>
-                                            <span className="um-full-name">{user.full_name}</span>
+                                            <div>
+                                                <span className="um-full-name">{user.full_name}</span>
+                                                <div className="um-username" style={{ marginTop: 1 }}>@{user.username}</div>
+                                            </div>
                                         </div>
                                     </td>
-                                    <td className="um-username">@{user.username}</td>
-                                    <td className="um-email">{user.email}</td>
                                     <td><RoleBadge role={user.role} label={user.role_label} /></td>
                                     <td><StatusBadge status={user.account_status} /></td>
-                                    <td className="um-city">{user.city || '—'}</td>
                                     <td className="um-joined">{user.joined}</td>
-                                    <td>
-                                        <RowActions
-                                            user={user}
-                                            onEdit={u => setEditUserId(u.id)}
-                                            onToggleStatus={setStatusUser}
-                                            onViewDetail={u => setDetailUserId(u.id)}
-                                        />
-                                    </td>
                                 </tr>
                             ))}
                         </tbody>
