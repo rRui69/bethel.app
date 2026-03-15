@@ -25,7 +25,7 @@ use App\Http\Controllers\PublicParishController;
 use App\Http\Controllers\PublicClergyController;
 
 Route::get('/', [HomeController::class, 'index'])->name('home');
-// SMTP Test Route (remove after testing)
+// SMTP Test Route
 Route::get('/test-smtp', function () {
     try {
         $transport = new \Symfony\Component\Mailer\Transport\Smtp\EsmtpTransport(

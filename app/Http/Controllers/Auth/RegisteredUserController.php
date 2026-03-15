@@ -68,7 +68,7 @@ class RegisteredUserController extends Controller
         ]);
 
         // Send OTP email — user doesn't exist yet, so pass values directly
-        Mail::to($request->email)->send(
+        Mail::to($request->email)->queue(
             new OtpVerificationMail($request->first_name, $request->email, $code)
         );
 
