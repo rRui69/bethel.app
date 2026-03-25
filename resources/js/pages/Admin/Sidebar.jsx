@@ -15,7 +15,7 @@ const NAV_SECTIONS = [
                 id:    'dashboard',
                 label: 'Dashboard',
                 icon:  FaGauge,
-                href:  '/admin/dashboard',
+                href:  '/admin',
                 badge: null,
                 roles: ['super_admin', 'parish_admin', 'parish_helpdesk'],
             },
