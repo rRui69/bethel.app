@@ -1,11 +1,11 @@
 <nav class="navbar navbar-expand-lg bethel-navbar sticky-top" aria-label="Main navigation">
     <div class="container">
 
-{{-- 
+{{--
 ============================================================
     NAVBAR BRAND LOGO
     Only one should be active.
-============================================================ 
+============================================================
 --}}
 
         {{--
@@ -29,7 +29,7 @@
             Bootstrap Icon as brand mark
             Change 'bi-house-heart-fill' to any icon at:
             https://icons.getbootstrap.com
-            ex: bi-church, bi-stars, bi-globe, bi-cross, bi-heart-pulse 
+            ex: bi-church, bi-stars, bi-globe, bi-cross, bi-heart-pulse
         --}}
         <div id="bethel-nav-brand"></div>
 
@@ -75,10 +75,10 @@
                     </ul>
                 </li>
 
-                <li class="nav-item">
+                <!-- <li class="nav-item">
                     <a class="nav-link {{ request()->is('contact*') ? 'active' : '' }}"
                        href="{{ url('/contact') }}">Contact Us</a>
-                </li>
+                </li> -->
             </ul>
 
             {{-- Auth Section --}}
@@ -157,7 +157,7 @@
             <li class="nav-item"><a class="nav-link" href="{{ url('/announcements') }}"><i class="bi bi-megaphone me-2"></i>Announcements</a></li>
             <li class="nav-item"><a class="nav-link" href="{{ url('/events') }}"><i class="bi bi-calendar-event me-2"></i>Events</a></li>
             <li class="nav-item"><a class="nav-link" href="{{ url('/sacraments') }}"><i class="bi bi-flower1 me-2"></i>Sacraments</a></li>
-        {{--<li class="nav-item"><a class="nav-link" href="{{ url('/contact') }}"><i class="bi bi-envelope me-2"></i>Contact Us</a></li>--}}  
+        {{--<li class="nav-item"><a class="nav-link" href="{{ url('/contact') }}"><i class="bi bi-envelope me-2"></i>Contact Us</a></li>--}}
             <li class="nav-item"><a class="nav-link" href="{{ url('/livestream') }}"><i class="bi bi-tower-broadcast me-2"></i>Livestream</a></li>
         </ul>
         <div class="px-3 pt-3 mt-2" style="border-top:1px solid rgba(255,255,255,0.1);">
