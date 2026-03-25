@@ -2,7 +2,7 @@ import React from 'react';
 import {
     FaUsers, FaUserCheck, FaUserXmark,
     FaHandsPraying, FaCircleCheck, FaClock,
-    FaCircleXmark, FaPhilippinePeso,
+    FaCircleXmark, FaPesoSign,
     FaArrowRight, FaUserPlus,
 } from 'react-icons/fa6';
 
@@ -329,7 +329,7 @@ export default function ParishAdminDashboard({
                 <StatCard
                     label="Total Collected"
                     value={currency(ps.total_collected)}
-                    icon={FaPhilippinePeso}
+                    icon={FaPesoSign}
                     iconBg="rgba(200,151,58,0.15)"
                     iconColor="#c8973a"
                     accent="#c8973a"
