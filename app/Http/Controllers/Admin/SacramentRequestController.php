@@ -25,17 +25,39 @@ class SacramentRequestController extends AdminBaseController
         return view('admin.sacrament-requests', compact('adminData'));
     }
 
+    // ── Stats ──────────────────────────────────────────────────
     public function stats()
     {
+        $admin = auth()->user();
+
+        if ($admin->isSuperAdmin()) {
+            return response()->json([
+                'pending'         => SacramentRequest::where('status', 'pending')->count(),
+                'payment_pending' => RequestPayment::where('status', 'submitted')->count(),
+            ]);
+        }
+
+        // SECURITY: Scope to the admin's parish
+        $parishId = $admin->parish_id;
+
         return response()->json([
-            'pending'         => SacramentRequest::where('status', 'pending')->count(),
-            'payment_pending' => RequestPayment::where('status', 'submitted')->count(),
+            'pending'         => SacramentRequest::where('status', 'pending')
+                ->where('parish_id', $parishId)
+                ->count(),
+            'payment_pending' => RequestPayment::whereHas(
+                    'sacramentRequest',
+                    fn ($q) => $q->where('parish_id', $parishId)
+                )
+                ->where('status', 'submitted')
+                ->count(),
         ]);
     }
 
     // ── List with filters ──────────────────────────────────────
     public function index(Request $request)
     {
+        $admin = auth()->user();
+
         $query = SacramentRequest::with([
             'user:id,first_name,last_name,email',
             'assignedClergy:id,first_name,last_name',
@@ -43,12 +65,14 @@ class SacramentRequestController extends AdminBaseController
             'latestPayment',
         ]);
 
-        // Filter by type name
+        // SECURITY: Tenant isolation
+        if (! $admin->isSuperAdmin()) {
+            $query->where('parish_id', $admin->parish_id);
+        }
+
         if ($request->filled('type')) {
             $query->where('sacrament_type', $request->type);
         }
-
-        // Filter by status
         if ($request->filled('status') && $request->status !== 'all') {
             $query->where('status', $request->status);
         }
@@ -82,6 +106,8 @@ class SacramentRequestController extends AdminBaseController
     // ── Detail ─────────────────────────────────────────────────
     public function show(SacramentRequest $sacramentRequest)
     {
+        $this->assertSameParish($sacramentRequest);
+
         $sacramentRequest->load([
             'user:id,first_name,last_name,email,phone,city,barangay',
             'parish:id,name,city',
@@ -107,9 +133,6 @@ class SacramentRequestController extends AdminBaseController
             'details'         => $sacramentRequest->details ?? [],
             'clergy_status'   => $sacramentRequest->clergy_status ?? 'unassigned',
             'payment_status'  => $payment?->status ?? $sacramentRequest->payment_status ?? 'unpaid',
-
-            // field_schema: the ordered array of { id, label, type } from the form builder.
-            // The frontend uses this to map details keys (UIDs) → human labels.
             'field_schema'    => $sacramentRequest->sacramentType?->form_schema['fields'] ?? [],
 
             'requester' => [
@@ -133,17 +156,17 @@ class SacramentRequestController extends AdminBaseController
             ] : null,
 
             'payment' => $payment ? [
-                'id'         => $payment->id,
-                'method'     => $payment->method,
-                'amount'     => $payment->amount,
-                'status'     => $payment->status,
-                'proof_url'  => $payment->proof_path
+                'id'          => $payment->id,
+                'method'      => $payment->method,
+                'amount'      => $payment->amount,
+                'status'      => $payment->status,
+                'proof_url'   => $payment->proof_path
                                     ? (str_starts_with($payment->proof_path, 'http')
                                         ? $payment->proof_path
                                         : Storage::url($payment->proof_path))
                                     : null,
-                'submitted'  => $payment->created_at->format('M d, Y g:i A'),
-                'admin_notes'=> $payment->admin_notes,
+                'submitted'   => $payment->created_at->format('M d, Y g:i A'),
+                'admin_notes' => $payment->admin_notes,
             ] : null,
         ]);
     }
@@ -151,6 +174,8 @@ class SacramentRequestController extends AdminBaseController
     // ── Update status + notes ──────────────────────────────────
     public function update(Request $request, SacramentRequest $sacramentRequest)
     {
+        $this->assertSameParish($sacramentRequest);
+
         $validated = $request->validate([
             'status'      => 'required|in:pending,approved,rejected',
             'admin_notes' => 'nullable|string|max:1000',
@@ -166,7 +191,6 @@ class SacramentRequestController extends AdminBaseController
         if ($oldStatus !== $validated['status']) {
             $this->notifyParishioner($sacramentRequest, $validated['status']);
 
-            // Send approval email
             if ($validated['status'] === 'approved') {
                 try {
                     $sacramentRequest->load(['user', 'parish', 'assignedClergy']);
@@ -190,10 +214,10 @@ class SacramentRequestController extends AdminBaseController
     }
 
     // ── Admin-initiated cancellation ───────────────────────────
-    // Admin cancels directly — sends inbox message + email to parishioner.
     public function adminCancel(Request $request, SacramentRequest $sacramentRequest)
     {
-        // Only cancellable when pending or approved
+        $this->assertSameParish($sacramentRequest);
+
         if (!in_array($sacramentRequest->status, ['pending', 'approved'])) {
             return response()->json(['message' => 'This request cannot be cancelled in its current status.'], 422);
         }
@@ -207,9 +231,7 @@ class SacramentRequestController extends AdminBaseController
             'cancellation_reason' => $validated['reason'],
         ]);
 
-        // 1. Inbox message to parishioner
         try {
-            $adminName = Auth::user()->full_name;
             RequestMessage::create([
                 'sacrament_request_id' => $sacramentRequest->id,
                 'sender_id'            => Auth::id(),
@@ -221,7 +243,6 @@ class SacramentRequestController extends AdminBaseController
             Log::warning('adminCancel: inbox message failed', ['error' => $e->getMessage()]);
         }
 
-        // 2. Inbox notification
         try {
             Notification::insert([[
                 'user_id'         => $sacramentRequest->user_id,
@@ -237,7 +258,6 @@ class SacramentRequestController extends AdminBaseController
             Log::warning('adminCancel: notification failed', ['error' => $e->getMessage()]);
         }
 
-        // 3. Email
         try {
             $sacramentRequest->load(['user', 'parish']);
             Mail::to($sacramentRequest->user->email)
@@ -253,10 +273,10 @@ class SacramentRequestController extends AdminBaseController
     }
 
     // ── Review parishioner cancellation request ────────────────
-    // Admin approves → status = 'cancelled'
-    // Admin rejects  → status = 'cancellation_rejected'
     public function reviewCancellation(Request $request, SacramentRequest $sacramentRequest)
     {
+        $this->assertSameParish($sacramentRequest);
+
         if ($sacramentRequest->status !== 'cancellation_requested') {
             return response()->json(['message' => 'No pending cancellation request to review.'], 422);
         }
@@ -267,10 +287,8 @@ class SacramentRequestController extends AdminBaseController
         ]);
 
         $newStatus = $validated['action'] === 'approve' ? 'cancelled' : 'cancellation_rejected';
-
         $sacramentRequest->update(['status' => $newStatus]);
 
-        // Notify parishioner of outcome
         try {
             $msg = $validated['action'] === 'approve'
                 ? "Your cancellation request for your {$sacramentRequest->sacrament_type} booking has been approved. The booking is now cancelled."
@@ -299,12 +317,11 @@ class SacramentRequestController extends AdminBaseController
     // ── Assign clergy ──────────────────────────────────────────
     public function assignClergy(Request $request, SacramentRequest $sacramentRequest)
     {
+        $this->assertSameParish($sacramentRequest);
+
         $validated = $request->validate([
-            // clergy_id is now a users.id where role = 'clergymen'
             'clergy_id' => [
-                'required',
-                'integer',
-                'exists:users,id',
+                'required', 'integer', 'exists:users,id',
                 function ($attr, $value, $fail) {
                     $user = User::find($value);
                     if (!$user || $user->role !== 'clergymen') {
@@ -324,7 +341,6 @@ class SacramentRequestController extends AdminBaseController
             'clergy_status'      => 'pending',
         ]);
 
-        // Notify the clergy user directly — no email lookup needed
         try {
             Notification::insert([[
                 'user_id'         => $clergyUser->id,
@@ -346,41 +362,44 @@ class SacramentRequestController extends AdminBaseController
             : $clergyUser->full_name;
 
         return response()->json([
-            'assigned_clergy' => [
-                'id'   => $clergyUser->id,
-                'name' => $titledName,
-            ],
-            'clergy_status' => 'pending',
+            'assigned_clergy' => ['id' => $clergyUser->id, 'name' => $titledName],
+            'clergy_status'   => 'pending',
         ]);
     }
 
     // ── Get available clergy list ──────────────────────────────
     public function availableClergy(SacramentRequest $sacramentRequest)
     {
-        $clergy = User::where('role', 'clergymen')
+        $this->assertSameParish($sacramentRequest);
+
+        $admin = auth()->user();
+
+        $query = User::where('role', 'clergymen')
             ->where('account_status', 'Active')
-            ->with('clergyProfile.parish:id,name')
-            ->get()
-            ->map(fn ($u) => [
-                'id'             => $u->id,
-                'name'           => $u->clergyProfile
-                    ? "{$u->clergyProfile->title} {$u->first_name} {$u->last_name}"
-                    : $u->full_name,
-                'parish'         => $u->clergyProfile?->parish?->name ?? '—',
-                'specialization' => $u->clergyProfile?->specialization ?? '—',
-            ]);
+            ->with('clergyProfile.parish:id,name');
+
+        // SECURITY: Scope clergy list to admin's parish for non-super_admin
+        if (! $admin->isSuperAdmin()) {
+            $query->where('parish_id', $admin->parish_id);
+        }
+
+        $clergy = $query->get()->map(fn ($u) => [
+            'id'             => $u->id,
+            'name'           => $u->clergyProfile
+                ? "{$u->clergyProfile->title} {$u->first_name} {$u->last_name}"
+                : $u->full_name,
+            'parish'         => $u->clergyProfile?->parish?->name ?? '—',
+            'specialization' => $u->clergyProfile?->specialization ?? '—',
+        ]);
 
         return response()->json($clergy);
     }
 
     // ── Mark as paid (walk-in / cash) ─────────────────────────
-    /**
-     * Admin manually marks a request as paid when the parishioner pays
-     * in person (cash/walk-in). No proof image required.
-     * Only allowed when the current payment_status is 'unpaid'.
-     */
     public function markPaid(Request $request, SacramentRequest $sacramentRequest)
     {
+        $this->assertSameParish($sacramentRequest);
+
         if ($sacramentRequest->payment_status !== 'unpaid') {
             return response()->json([
                 'message' => 'This request already has a payment record. Use the verify/reject flow instead.',
@@ -392,13 +411,12 @@ class SacramentRequestController extends AdminBaseController
             'admin_notes' => 'nullable|string|max:500',
         ]);
 
-        // Create a verified payment record on behalf of the parishioner
         RequestPayment::create([
             'sacrament_request_id' => $sacramentRequest->id,
             'user_id'              => $sacramentRequest->user_id,
             'method'               => 'cash',
             'amount'               => $validated['amount'] ?? null,
-            'proof_path'           => null,   // walk-in: no uploaded proof
+            'proof_path'           => null,
             'status'               => 'verified',
             'admin_notes'          => $validated['admin_notes'] ?? 'Marked as paid (walk-in) by admin.',
             'verified_at'          => now(),
@@ -407,7 +425,6 @@ class SacramentRequestController extends AdminBaseController
 
         $sacramentRequest->update(['payment_status' => 'verified']);
 
-        // Notify parishioner
         try {
             Notification::insert([[
                 'user_id'         => $sacramentRequest->user_id,
@@ -423,15 +440,14 @@ class SacramentRequestController extends AdminBaseController
             Log::warning('markPaid: notification failed', ['error' => $e->getMessage()]);
         }
 
-        return response()->json([
-            'payment_status' => 'verified',
-            'message'        => 'Payment recorded successfully.',
-        ]);
+        return response()->json(['payment_status' => 'verified', 'message' => 'Payment recorded successfully.']);
     }
 
     // ── Verify payment ─────────────────────────────────────────
     public function verifyPayment(Request $request, SacramentRequest $sacramentRequest)
     {
+        $this->assertSameParish($sacramentRequest);
+
         $validated = $request->validate([
             'status'      => 'required|in:verified,rejected',
             'admin_notes' => 'nullable|string|max:500',
@@ -451,7 +467,6 @@ class SacramentRequestController extends AdminBaseController
 
         $sacramentRequest->update(['payment_status' => $validated['status']]);
 
-        // Notify parishioner
         try {
             $msg = $validated['status'] === 'verified'
                 ? "Your payment for the {$sacramentRequest->sacrament_type} request has been verified."
@@ -477,7 +492,8 @@ class SacramentRequestController extends AdminBaseController
     // ── Messages: list ─────────────────────────────────────────
     public function messages(SacramentRequest $sacramentRequest)
     {
-        // Mark all parishioner messages as read by admin
+        $this->assertSameParish($sacramentRequest);
+
         $sacramentRequest->messages()
             ->where('read_by_admin', false)
             ->whereHas('sender', fn ($q) => $q->where('role', 'parishioner'))
@@ -502,6 +518,8 @@ class SacramentRequestController extends AdminBaseController
     // ── Messages: send ─────────────────────────────────────────
     public function sendMessage(Request $request, SacramentRequest $sacramentRequest)
     {
+        $this->assertSameParish($sacramentRequest);
+
         $validated = $request->validate([
             'body'      => 'nullable|string|max:2000',
             'image_url' => 'nullable|url|max:1000',
@@ -520,7 +538,6 @@ class SacramentRequestController extends AdminBaseController
             'read_by_parishioner'  => false,
         ]);
 
-        // Notify parishioner
         try {
             Notification::insert([[
                 'user_id'         => $sacramentRequest->user_id,
@@ -550,18 +567,50 @@ class SacramentRequestController extends AdminBaseController
         ], 201);
     }
 
-    // ── Private: auto-create event when sacrament is approved ─────────
+    // ── Certificate ────────────────────────────────────────────
+    public function certificate(SacramentRequest $sacramentRequest)
+    {
+        $this->assertSameParish($sacramentRequest);
+
+        $sacramentRequest->load(['user', 'parish', 'assignedClergy.clergyProfile']);
+
+        return response()->json([
+            'id'             => $sacramentRequest->id,
+            'sacrament_type' => $sacramentRequest->sacrament_type,
+            'preferred_date' => $sacramentRequest->preferred_date?->format('F d, Y'),
+            'requester'      => $sacramentRequest->user?->full_name,
+            'parish'         => $sacramentRequest->parish?->name,
+            'clergy'         => $sacramentRequest->assignedClergy
+                ? ($sacramentRequest->assignedClergy->clergyProfile
+                    ? "{$sacramentRequest->assignedClergy->clergyProfile->title} {$sacramentRequest->assignedClergy->full_name}"
+                    : $sacramentRequest->assignedClergy->full_name)
+                : null,
+            'details'        => $sacramentRequest->details ?? [],
+        ]);
+    }
+
+    // ─────────────────────────────────────────────────────────────────────────
+    // Private Helpers
+    // ─────────────────────────────────────────────────────────────────────────
+
     /**
-     * Creates a pending Event record in the events list when an admin
-     * approves a sacramental request. The event starts as 'Pending' so
-     * the helpdesk can review and set it to 'Approved' / 'Completed'.
+     * Abort 403 if a non-super_admin tries to access a sacrament request
+     * that does not belong to their parish.
      */
+    private function assertSameParish(SacramentRequest $req): void
+    {
+        $admin = auth()->user();
+        if ($admin->isSuperAdmin()) return;
+
+        if ((int) $req->parish_id !== (int) $admin->parish_id) {
+            abort(403, 'You can only manage sacrament requests within your own parish.');
+        }
+    }
+
     private function createEventFromSacramentRequest(SacramentRequest $req): void
     {
         try {
             $eventType = $this->mapSacramentToEventType($req->sacrament_type);
-
-            // Guard: only create if this is a recognised sacramental event type
             if (! $eventType) {
                 Log::info("createEventFromSacramentRequest: unknown type '{$req->sacrament_type}', skipping.");
                 return;
@@ -571,7 +620,7 @@ class SacramentRequestController extends AdminBaseController
 
             Event::create([
                 'parish_id'         => $req->parish_id,
-                'user_id'           => Auth::id(),       // admin who approved
+                'user_id'           => Auth::id(),
                 'clergy_id'         => $req->assigned_clergy_id,
                 'title'             => "{$req->sacrament_type} – {$parishionerName}",
                 'description'       => "Auto-generated from sacrament request #{$req->id}."
@@ -579,11 +628,10 @@ class SacramentRequestController extends AdminBaseController
                 'type'              => $eventType,
                 'event_date'        => $req->preferred_date ?? now()->addWeek(),
                 'start_time'        => $req->preferred_time,
-                'status'            => 'Pending',        // per requirement: shows as pending in events
+                'status'            => 'Pending',
                 'sacrament_details' => $req->details,
             ]);
         } catch (\Throwable $e) {
-            // Non-fatal: log and continue — do NOT roll back the approval
             Log::warning('createEventFromSacramentRequest failed', [
                 'sacrament_request_id' => $req->id,
                 'error'                => $e->getMessage(),
@@ -591,39 +639,31 @@ class SacramentRequestController extends AdminBaseController
         }
     }
 
-    /**
-     * Maps a sacrament_type string to a value in Event::SACRAMENTAL_TYPES.
-     * Returns null if no match found.
-     */
     private function mapSacramentToEventType(string $sacramentType): ?string
     {
-        // Direct match first (handles exact DB values)
         if (in_array($sacramentType, Event::SACRAMENTAL_TYPES)) {
             return $sacramentType;
         }
 
-        // Case-insensitive fallback map for variant spellings
         $map = [
-            'baptism'           => 'Baptism',
-            'marriage'          => 'Marriage',
-            'wedding'           => 'Marriage',
-            'confirmation'      => 'Confirmation',
-            'confession'        => 'Confession',
-            'reconciliation'    => 'Confession',
-            'first communion'   => 'First Communion',
-            'communion'         => 'First Communion',
-            'anointing'         => 'Anointing',
+            'baptism'               => 'Baptism',
+            'marriage'              => 'Marriage',
+            'wedding'               => 'Marriage',
+            'confirmation'          => 'Confirmation',
+            'confession'            => 'Confession',
+            'reconciliation'        => 'Confession',
+            'first communion'       => 'First Communion',
+            'communion'             => 'First Communion',
+            'anointing'             => 'Anointing',
             'anointing of the sick' => 'Anointing',
-            'burial'            => 'Burial',
-            'funeral'           => 'Burial',
-            'funeral services'  => 'Burial',
+            'burial'                => 'Burial',
+            'funeral'               => 'Burial',
+            'funeral services'      => 'Burial',
         ];
 
-        $normalized = strtolower(trim($sacramentType));
-        return $map[$normalized] ?? null;
+        return $map[strtolower(trim($sacramentType))] ?? null;
     }
 
-    // ── Private: notify parishioner on status change ──────────
     private function notifyParishioner(SacramentRequest $req, string $newStatus): void
     {
         try {

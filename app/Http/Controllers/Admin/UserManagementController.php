@@ -12,9 +12,12 @@ use Illuminate\Validation\Rule;
 
 class UserManagementController extends AdminBaseController
 {
-    // ── Blade Page ──────────────────────────────────────────────────
+    // ── Page ────────────────────────────────────────────────────────
     public function page()
     {
+        // Only super_admin and parish_admin may access User Management
+        $this->authorizeUserManagement();
+
         $adminData = $this->adminShellData();
         return view('admin.users', compact('adminData'));
     }
@@ -22,10 +25,22 @@ class UserManagementController extends AdminBaseController
     // ── Index (list) ────────────────────────────────────────────────
     public function index(Request $request): JsonResponse
     {
+        $this->authorizeUserManagement();
+        $admin = auth()->user();
+
         $query = User::select([
             'id', 'username', 'email', 'role', 'account_status',
             'first_name', 'last_name', 'phone', 'city', 'created_at', 'avatar_url',
+            'parish_id',
         ]);
+
+        // SECURITY: Tenant isolation — non-super_admin only sees their own parish
+        if (! $admin->isSuperAdmin()) {
+            $query->where('parish_id', $admin->parish_id);
+
+            // parish_admin cannot see other parish_admin or super_admin accounts
+            $query->whereNotIn('role', ['super_admin', 'parish_admin']);
+        }
 
         if ($request->filled('role') && $request->role !== 'all') {
             $query->where('role', $request->role);
@@ -48,18 +63,7 @@ class UserManagementController extends AdminBaseController
         $direction = $request->direction === 'asc' ? 'asc' : 'desc';
         $query->orderBy($sort, $direction);
 
-        $users = $query->paginate(15)->through(fn ($u) => [
-            'id'             => $u->id,
-            'username'       => $u->username,
-            'email'          => $u->email,
-            'full_name'      => $u->full_name,
-            'role'           => $u->role,
-            'role_label'     => $this->roleLabel($u->role),
-            'account_status' => $u->account_status,
-            'phone'          => $u->phone,
-            'city'           => $u->city,
-            'joined'         => $u->created_at->format('M d, Y'),
-        ]);
+        $users = $query->paginate(15)->through(fn ($u) => $this->formatRow($u));
 
         return response()->json($users);
     }
@@ -67,7 +71,17 @@ class UserManagementController extends AdminBaseController
     // ── Stats ────────────────────────────────────────────────────────
     public function stats(): JsonResponse
     {
-        $counts = User::selectRaw("
+        $this->authorizeUserManagement();
+        $admin = auth()->user();
+
+        $query = User::query();
+
+        if (! $admin->isSuperAdmin()) {
+            $query->where('parish_id', $admin->parish_id)
+                  ->whereNotIn('role', ['super_admin', 'parish_admin']);
+        }
+
+        $counts = (clone $query)->selectRaw("
             COUNT(*)                                                      AS total,
             SUM(CASE WHEN account_status = 'Active'   THEN 1 ELSE 0 END) AS active,
             SUM(CASE WHEN account_status != 'Active'  THEN 1 ELSE 0 END) AS inactive,
@@ -81,6 +95,9 @@ class UserManagementController extends AdminBaseController
     // ── Show ────────────────────────────────────────────────────────
     public function show(User $user): JsonResponse
     {
+        $this->authorizeUserManagement();
+        $this->assertCanManage($user);
+
         return response()->json([
             'id'             => $user->id,
             'username'       => $user->username,
@@ -109,11 +126,19 @@ class UserManagementController extends AdminBaseController
     // ── Store ────────────────────────────────────────────────────────
     public function store(Request $request): JsonResponse
     {
+        $this->authorizeUserManagement();
+        $admin = auth()->user();
+
+        // Restrict roles that parish_admin can create
+        $allowedRoles = $admin->isSuperAdmin()
+            ? ['super_admin', 'parish_admin', 'parish_helpdesk', 'clergymen', 'parishioner']
+            : ['parish_helpdesk', 'clergymen', 'parishioner'];
+
         $validated = $request->validate([
             'username'    => ['required', 'string', 'min:3', 'max:255', 'unique:users', 'regex:/^[a-zA-Z0-9._-]+$/'],
             'email'       => ['required', 'string', 'email', 'max:255', 'unique:users'],
             'password'    => ['required', Rules\Password::defaults()],
-            'role'        => ['required', Rule::in(['super_admin', 'parish_admin', 'parish_helpdesk', 'clergymen', 'parishioner'])],
+            'role'        => ['required', Rule::in($allowedRoles)],
             'first_name'  => ['required', 'string', 'max:255'],
             'middle_name' => ['nullable', 'string', 'max:255'],
             'last_name'   => ['required', 'string', 'max:255'],
@@ -124,11 +149,17 @@ class UserManagementController extends AdminBaseController
             'barangay'    => ['required', 'string', 'max:255'],
         ]);
 
+        // SECURITY: Force parish_id to the admin's own parish; super_admin keeps null
+        $parishId = $admin->isSuperAdmin()
+            ? ($request->input('parish_id') ?: null)
+            : $admin->parish_id;
+
         $user = User::create([
             ...$validated,
             'password'       => Hash::make($validated['password']),
             'account_status' => 'Active',
             'country'        => 'Philippines',
+            'parish_id'      => $parishId,
         ]);
 
         return response()->json([
@@ -141,10 +172,19 @@ class UserManagementController extends AdminBaseController
     // ── Full Update (profile + role/status) ─────────────────────────
     public function update(Request $request, User $user): JsonResponse
     {
+        $this->authorizeUserManagement();
+        $this->assertCanManage($user);
+        $admin = auth()->user();
+
         // Guard: self-lockout
         if ($user->id === auth()->id() && $request->has('account_status') && $request->account_status !== 'Active') {
             return response()->json(['message' => 'You cannot deactivate your own account.'], 422);
         }
+
+        // Restrict roles parish_admin can assign
+        $allowedRoles = $admin->isSuperAdmin()
+            ? ['super_admin', 'parish_admin', 'parish_helpdesk', 'clergymen', 'parishioner']
+            : ['parish_helpdesk', 'clergymen', 'parishioner'];
 
         $validated = $request->validate([
             'first_name'     => ['sometimes', 'required', 'string', 'max:255'],
@@ -160,7 +200,7 @@ class UserManagementController extends AdminBaseController
             'barangay'       => ['sometimes', 'required', 'string', 'max:255'],
             'street_address' => ['sometimes', 'nullable', 'string', 'max:500'],
             'zip_code'       => ['sometimes', 'nullable', 'string', 'max:10'],
-            'role'           => ['sometimes', Rule::in(['super_admin', 'parish_admin', 'parish_helpdesk', 'clergymen', 'parishioner'])],
+            'role'           => ['sometimes', Rule::in($allowedRoles)],
             'account_status' => ['sometimes', Rule::in(['Active', 'Inactive', 'Suspended'])],
         ]);
 
@@ -175,11 +215,12 @@ class UserManagementController extends AdminBaseController
     }
 
     // ── Reset Password (auto-generate) ───────────────────────────────
-     public function resetPassword(User $user): JsonResponse
+    public function resetPassword(User $user): JsonResponse
     {
-        // Laravel docs: https://laravel.com/docs/12.x/strings#method-str-password
-        $generated = \Illuminate\Support\Str::password(length: 12, symbols: true);
+        $this->authorizeUserManagement();
+        $this->assertCanManage($user);
 
+        $generated = Str::password(length: 12, symbols: true);
         $user->update(['password' => Hash::make($generated)]);
 
         return response()->json([
@@ -189,10 +230,12 @@ class UserManagementController extends AdminBaseController
         ]);
     }
 
-    // ── Delete (soft or hard) ────────────────────────────────────────
+    // ── Delete ────────────────────────────────────────────────────────
     public function destroy(Request $request, User $user): JsonResponse
     {
-        // Guard: prevent self-deletion
+        $this->authorizeUserManagement();
+        $this->assertCanManage($user);
+
         if ($user->id === auth()->id()) {
             return response()->json(['message' => 'You cannot delete your own account.'], 422);
         }
@@ -201,7 +244,7 @@ class UserManagementController extends AdminBaseController
 
         if ($force) {
             $name = $user->full_name;
-            $user->forceDelete(); // permanently removes from DB
+            $user->forceDelete();
             return response()->json([
                 'success' => true,
                 'message' => "{$name} has been permanently deleted.",
@@ -209,7 +252,6 @@ class UserManagementController extends AdminBaseController
             ]);
         }
 
-        // Soft delete — sets deleted_at, user is hidden from normal queries
         $user->delete();
         return response()->json([
             'success' => true,
@@ -228,7 +270,6 @@ class UserManagementController extends AdminBaseController
                 ->where('id', $request->id)
                 ->update(['is_read' => true]);
         } else {
-            // Mark all
             \App\Models\Notification::where('user_id', $admin->id)
                 ->update(['is_read' => true]);
         }
@@ -237,6 +278,45 @@ class UserManagementController extends AdminBaseController
     }
 
     // ── Private Helpers ──────────────────────────────────────────────
+
+    /**
+     * Abort with 403 unless the authenticated user is super_admin or parish_admin.
+     * Prevents parish_helpdesk and clergymen from accessing user management
+     * endpoints directly (even if they know the URL).
+     */
+    private function authorizeUserManagement(): void
+    {
+        $user = auth()->user();
+        if (! $user->isSuperAdmin() && ! $user->isParishAdmin()) {
+            abort(403, 'You do not have permission to manage users.');
+        }
+    }
+
+    /**
+     * Verify the authenticated admin is allowed to act on the given $target user.
+     *
+     * Rules:
+     * - super_admin  → can manage anyone
+     * - parish_admin → can only manage users in their own parish
+     *                  and cannot manage super_admin or other parish_admin accounts
+     */
+    private function assertCanManage(User $target): void
+    {
+        $admin = auth()->user();
+
+        if ($admin->isSuperAdmin()) return;
+
+        // Must be same parish
+        if ((int) $target->parish_id !== (int) $admin->parish_id) {
+            abort(403, 'You can only manage users within your own parish.');
+        }
+
+        // Cannot touch higher-privilege accounts
+        if (in_array($target->role, ['super_admin', 'parish_admin'])) {
+            abort(403, 'You do not have permission to manage this account type.');
+        }
+    }
+
     private function formatRow(User $u): array
     {
         return [

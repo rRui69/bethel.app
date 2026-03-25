@@ -8,25 +8,25 @@ class DatabaseSeeder extends Seeder
 {
     public function run(): void
     {
-        // ── ORDER MATTERS — respect foreign key dependencies ──
+        // ── ORDER MATTERS — respect foreign key dependencies ──────────────────
         $this->call([
-            // 1. Users first (super_admin + sample parishioners)
-            \Database\Seeders\UserSeeder::class,
-            // 2. Parishes
+            // 1. Parishes first — UserSeeder needs parish IDs
             \Database\Seeders\ParishSeeder::class,
+            // 2. Users (super_admin + demo staff + sample parishioners)
+            \Database\Seeders\UserSeeder::class,
             // 3. Parish staff — 1 parish_admin + 1 parish_helpdesk per parish
             \Database\Seeders\StaffSeeder::class,
-            // 3. Clergy (depends on parishes)
+            // 4. Clergy (depends on parishes)
             \Database\Seeders\ClergySeeder::class,
-            // 4. Events (depends on parishes, clergy, users)
+            // 5. Events (depends on parishes, clergy, users)
             \Database\Seeders\EventSeeder::class,
-            // 5. Announcements (depends on parishes, users)
+            // 6. Announcements (depends on parishes, users)
             \Database\Seeders\AnnouncementSeeder::class,
-            // 6. Notifications (depends on users, events)
+            // 7. Notifications (depends on users, events)
             \Database\Seeders\NotificationSeeder::class,
-            // 7. Sacrament Types FIRST — requests depend on this
+            // 8. Sacrament Types FIRST — requests depend on this
             \Database\Seeders\SacramentTypeSeeder::class,
-            // 8. Sacrament Requests — links to types via sacrament_type_id
+            // 9. Sacrament Requests — links to types via sacrament_type_id
             \Database\Seeders\SacramentRequestSeeder::class,
         ]);
     }
