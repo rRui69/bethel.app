@@ -19,6 +19,10 @@ if (el) {
                 parishes={data.parishes}
                 clergy={data.clergy}
                 notifications={data.notifications}
+                paymentStats={data.payment_stats}
+                userStats={data.user_stats}
+                recentPayments={data.recent_payments}
+                recentUsers={data.recent_users}
             />
         </React.StrictMode>
     );

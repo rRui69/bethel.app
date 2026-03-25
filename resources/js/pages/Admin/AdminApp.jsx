@@ -11,8 +11,8 @@ import SacramentTypes     from './SacramentTypes/SacramentTypes';
 import ClergyManagement   from './Clergy/ClergyManagement';
 import ClergyDashboard    from '../Clergy/ClergyDashboard';
 import MassScheduleAdmin  from './MassSchedule/MassScheduleAdmin';
-import LivestreamAdmin from './Livestream/LivestreamAdmin';
-import ParishManagement from './Parish/ParishManagement';
+import LivestreamAdmin    from './Livestream/LivestreamAdmin';
+import ParishManagement   from './Parish/ParishManagement';
 
 // Page router — add new admin pages here
 const PAGE_MAP = {
@@ -27,15 +27,25 @@ const PAGE_MAP = {
     '/admin/clergy':               ClergyManagement,
     '/admin/clergy-dashboard':     ClergyDashboard,
     '/admin/mass-schedules':       MassScheduleAdmin,
-    '/admin/livestreams': LivestreamAdmin,
-    '/admin/parishes':    ParishManagement,
+    '/admin/livestreams':          LivestreamAdmin,
+    '/admin/parishes':             ParishManagement,
 };
 
-export default function AdminApp({ stats: initialStats, admin, parishes, notifications, clergy }) {
-    const [collapsed,    setCollapsed]    = useState(false);
-    const [mobileOpen,   setMobileOpen]   = useState(false);
-
-    const [stats, setStats] = useState(initialStats ?? {});
+export default function AdminApp({
+    stats: initialStats,
+    admin,
+    parishes,
+    notifications,
+    clergy,
+    // Parish Admin (Ministerial Head IT Admin) exclusive props
+    paymentStats,
+    userStats,
+    recentPayments,
+    recentUsers,
+}) {
+    const [collapsed,  setCollapsed]  = useState(false);
+    const [mobileOpen, setMobileOpen] = useState(false);
+    const [stats,      setStats]      = useState(initialStats ?? {});
 
     const refreshSacramentStats = useCallback(async () => {
         try {
@@ -63,7 +73,6 @@ export default function AdminApp({ stats: initialStats, admin, parishes, notific
                     userRole={admin?.role}
                 />
 
-                {/* Mobile overlay — clicking outside closes sidebar */}
                 {mobileOpen && (
                     <div
                         className="sidebar-overlay"
@@ -88,6 +97,10 @@ export default function AdminApp({ stats: initialStats, admin, parishes, notific
                             admin={admin}
                             clergy={clergy}
                             onStatsRefresh={refreshSacramentStats}
+                            paymentStats={paymentStats}
+                            userStats={userStats}
+                            recentPayments={recentPayments}
+                            recentUsers={recentUsers}
                         />
                     </main>
 
